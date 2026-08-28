@@ -1,0 +1,6 @@
+{
+  "name": "Jadwal & Pengawas Ujian SMP",
+  "description": "Sistem otomatisasi penjadwalan ujian, alokasi ruang, dan distribusi pengawas ujian jenjang SMP dengan pembagian beban merata, proteksi konflik mengajar, dan ekspor laporan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
