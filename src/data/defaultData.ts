@@ -46,6 +46,8 @@ export const DEFAULT_CONFIG: ExamTimeConfig = {
     { dayIndex: 3, dateStr: 'Kamis, 11 Jun 2026', sessionIndex: 2, grade: 'all', subjectId: 'sub-8', subjectName: 'Informatika / Prakarya', subjectCode: 'INF', category: 'Kejuruan' },
     { dayIndex: 4, dateStr: 'Jumat, 12 Jun 2026', sessionIndex: 1, grade: 'all', subjectId: 'sub-5', subjectName: 'Ilmu Pengetahuan Sosial (IPS)', subjectCode: 'IPS', category: 'Sosial' },
     { dayIndex: 4, dateStr: 'Jumat, 12 Jun 2026', sessionIndex: 2, grade: 'all', subjectId: 'sub-9', subjectName: 'Pendidikan Jasmani & Olahraga (PJOK)', subjectCode: 'PJOK', category: 'Umum' },
+    { dayIndex: 5, dateStr: 'Sabtu, 13 Jun 2026', sessionIndex: 1, grade: 'all', subjectId: 'sub-8', subjectName: 'Informatika & Prakarya', subjectCode: 'INF', category: 'Kejuruan' },
+    { dayIndex: 5, dateStr: 'Sabtu, 13 Jun 2026', sessionIndex: 2, grade: 'all', subjectId: 'sub-10', subjectName: 'Bahasa Daerah / Muatan Lokal', subjectCode: 'BDAR', category: 'Muatan Lokal' },
   ],
   
   invigilatorsPerRoom: 1,

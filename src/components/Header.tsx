@@ -191,7 +191,7 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <span>📄</span>
+            <FileSpreadsheet className="w-4 h-4" />
             <span>Ekspor PDF & Excel</span>
           </button>
         </nav>

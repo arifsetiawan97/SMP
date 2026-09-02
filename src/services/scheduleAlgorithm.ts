@@ -115,18 +115,36 @@ export function calculateSessionTimes(
 }
 
 /**
- * Generate dates array skipping weekends according to activeDays
+ * Generate dates array skipping non-active days according to activeDays
  */
-export function generateExamDates(startDateStr: string, totalDays: number, activeDays: string[]): { dayIndex: number; date: Date; dateStr: string }[] {
+export function generateExamDates(
+  startDateStr: string,
+  totalDays: number,
+  activeDays: string[]
+): { dayIndex: number; date: Date; dateStr: string }[] {
   const result: { dayIndex: number; date: Date; dateStr: string }[] = [];
   const daysMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   
-  const cur = new Date(startDateStr);
+  // Safe local parsing at noon (12:00:00) to prevent UTC/local timezone shifts
+  const parts = (startDateStr || '2026-06-08').split('-').map(Number);
+  const year = parts[0] || 2026;
+  const month = (parts[1] || 6) - 1;
+  const day = parts[2] || 8;
+  const cur = new Date(year, month, day, 12, 0, 0);
+
+  const safeActiveDays =
+    activeDays && activeDays.length > 0
+      ? activeDays
+      : ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+
+  const targetCount = Math.max(1, totalDays || 5);
   let daysAdded = 0;
-  
-  while (daysAdded < totalDays) {
+  let safetyLoop = 0;
+
+  while (daysAdded < targetCount && safetyLoop < 150) {
+    safetyLoop++;
     const dayName = daysMap[cur.getDay()];
-    if (activeDays.includes(dayName)) {
+    if (safeActiveDays.includes(dayName)) {
       result.push({
         dayIndex: daysAdded,
         date: new Date(cur),
@@ -137,7 +155,7 @@ export function generateExamDates(startDateStr: string, totalDays: number, activ
     // Move to next calendar day
     cur.setDate(cur.getDate() + 1);
   }
-  
+
   return result;
 }
 
