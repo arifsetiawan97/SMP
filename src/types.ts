@@ -157,6 +157,7 @@ export interface ExamScheduleSlot {
   grade: 7 | 8 | 9;
   subjectId: string;
   subjectName: string;
+  subjectCode?: string;
   roomId: string;
   roomName: string;
   classIds: string[];

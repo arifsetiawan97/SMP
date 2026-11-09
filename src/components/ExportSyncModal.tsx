@@ -203,7 +203,7 @@ export const ExportSyncModal: React.FC<ExportSyncModalProps> = ({
               PDF Master Jadwal & Pengawas
             </h4>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Format Landscape A4 lengkap dengan KOP Dinas Pendidikan, matriks hari/sesi/ruang, serta tanda tangan Kepala Sekolah & Ketua Panitia.
+              Format Landscape A4 lengkap dengan KOP Dinas Pendidikan, matriks hari/sesi/ruang, serta Lembar Pengesahan resmi (Kepala Sekolah di sisi Kiri & Ketua Panitia di sisi Kanan).
             </p>
           </div>
 

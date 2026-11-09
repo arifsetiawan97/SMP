@@ -203,33 +203,50 @@ export function generateMasterSchedulePDF(
     },
   });
 
-  // Footer / Tanda Tangan
+  // Footer / Lembar Pengesahan (Kepala Sekolah Kiri, Ketua Panitia Kanan)
   // @ts-expect-error jspdf-autotable adds lastAutoTable to doc
-  const finalY = (doc.lastAutoTable?.finalY || 160) + 10;
+  let finalY = (doc.lastAutoTable?.finalY || 160) + 10;
   
-  if (finalY < 185) {
-    const signatureY = Math.max(finalY, 160);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    
-    const chairmanIdLabel = config.committeeChairmanIdType || 'NIP';
-    const headmasterIdLabel = config.headmasterIdType || 'NIP';
+  // If table reached the bottom, add a new clean page for Lembar Pengesahan
+  if (finalY > 165) {
+    doc.addPage('a4', 'landscape');
+    finalY = 30;
+  }
 
-    // Left: Ketua Panitia
-    doc.text(`Mengetahui,`, 30, signatureY);
-    doc.text(`Ketua Panitia Ujian,`, 30, signatureY + 5);
-    doc.setFont('helvetica', 'bold');
-    doc.text(config.committeeChairmanName, 30, signatureY + 25);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${chairmanIdLabel}. ${config.committeeChairmanNip || '-'}`, 30, signatureY + 30);
+  const signatureY = Math.max(finalY, 150);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  
+  const chairmanIdLabel = config.committeeChairmanIdType || 'NIP';
+  const headmasterIdLabel = config.headmasterIdType || 'NIP';
+  const city = config.kabupaten ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '') : 'Sekolah';
+  const examDateStr = config.startDate
+    ? new Date(config.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
 
-    // Right: Kepala Sekolah
-    doc.text(`Ditetapkan di: ${config.kabupaten ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '') : 'Sekolah'}`, 200, signatureY);
-    doc.text(`Kepala ${config.schoolName},`, 200, signatureY + 5);
+  // KIRI: Kepala Sekolah (Penandatangan & Pengesahan Utama)
+  doc.text(`Mengetahui,`, 30, signatureY);
+  doc.text(`Kepala ${config.schoolName},`, 30, signatureY + 5);
+  doc.setFont('helvetica', 'bold');
+  doc.text(config.headmasterName, 30, signatureY + 25);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${headmasterIdLabel}. ${config.headmasterNip || '-'}`, 30, signatureY + 30);
+
+  // KANAN: Ketua Panitia Ujian (Pelaksana)
+  doc.text(`Ditetapkan di: ${city}`, 200, signatureY);
+  if (examDateStr) {
+    doc.text(`Pada tanggal: ${examDateStr}`, 200, signatureY + 4);
+    doc.text(`Ketua Panitia Ujian,`, 200, signatureY + 9);
     doc.setFont('helvetica', 'bold');
-    doc.text(config.headmasterName, 200, signatureY + 25);
+    doc.text(config.committeeChairmanName, 200, signatureY + 29);
     doc.setFont('helvetica', 'normal');
-    doc.text(`${headmasterIdLabel}. ${config.headmasterNip || '-'}`, 200, signatureY + 30);
+    doc.text(`${chairmanIdLabel}. ${config.committeeChairmanNip || '-'}`, 200, signatureY + 34);
+  } else {
+    doc.text(`Ketua Panitia Ujian,`, 200, signatureY + 5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(config.committeeChairmanName, 200, signatureY + 25);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${chairmanIdLabel}. ${config.committeeChairmanNip || '-'}`, 200, signatureY + 30);
   }
 
   doc.save(`Jadwal_Master_${config.schoolName.replace(/\s+/g, '_')}_${config.semester}.pdf`);
@@ -439,20 +456,28 @@ export function generateAttendanceAndBAP_PDF(
     doc.text('(Catat jumlah siswa hadir/tidak hadir, lembar soal rusak, atau insiden lainnya)', 18, endY + 8);
     doc.setTextColor(0, 0, 0);
 
-    // Signatures
+    // Signatures (Lembar Pengesahan BAP: Kepala Sekolah Kiri, Ketua Panitia Kanan)
     const sigY = endY + 35;
     if (sigY < 265) {
+      const headmasterIdLabel = config.headmasterIdType || 'NIP';
       const chairmanIdLabel = config.committeeChairmanIdType || 'NIP';
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.text('Petugas / Panitia Piket,', 30, sigY);
-      doc.text('Ketua Panitia Ujian,', 140, sigY);
-      
+
+      // KIRI: Kepala Sekolah
+      doc.text('Mengetahui,', 30, sigY);
+      doc.text(`Kepala ${config.schoolName},`, 30, sigY + 5);
       doc.setFont('helvetica', 'bold');
-      doc.text('(..................................................)', 30, sigY + 22);
-      doc.text(config.committeeChairmanName, 140, sigY + 22);
+      doc.text(config.headmasterName, 30, sigY + 24);
       doc.setFont('helvetica', 'normal');
-      doc.text(`${chairmanIdLabel}. ${config.committeeChairmanNip || '-'}`, 140, sigY + 27);
+      doc.text(`${headmasterIdLabel}. ${config.headmasterNip || '-'}`, 30, sigY + 29);
+
+      // KANAN: Ketua Panitia
+      doc.text('Ketua Panitia Ujian,', 140, sigY + 5);
+      doc.setFont('helvetica', 'bold');
+      doc.text(config.committeeChairmanName, 140, sigY + 24);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${chairmanIdLabel}. ${config.committeeChairmanNip || '-'}`, 140, sigY + 29);
     }
   });
 
@@ -586,6 +611,71 @@ export function generateComprehensiveExcel(
     { wch: 14 },
   ];
   XLSX.utils.book_append_sheet(wb, wsRooms, 'Alokasi_Ruang_Siswa');
+
+  // Sheet 5: LEMBAR PENGESAHAN RESMI (Kepala Sekolah Kiri, Ketua Panitia Kanan)
+  const chairmanIdLabel = config.committeeChairmanIdType || 'NIP';
+  const headmasterIdLabel = config.headmasterIdType || 'NIP';
+  const city = config.kabupaten ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '') : 'Sekolah';
+  const examDateStr = config.startDate
+    ? new Date(config.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+
+  const pengesahanRows = [
+    { A: 'LEMBAR PENGESAHAN JADWAL UJIAN DAN PENGAWAS RUANG' },
+    { A: `${config.schoolName.toUpperCase()}` },
+    { A: `Tahun Ajaran ${config.academicYear} - Semester ${config.semester} (${config.examType})` },
+    { A: '' },
+    { A: 'Jadwal dan pembagian tugas pengawas ujian ini telah diteliti, disetujui, dan disahkan untuk dilaksanakan dengan penuh tanggung jawab.' },
+    { A: '' },
+    {
+      A: '',
+      B: 'Mengetahui,',
+      C: '',
+      D: '',
+      E: `Ditetapkan di: ${city}`,
+    },
+    {
+      A: '',
+      B: `Kepala ${config.schoolName},`,
+      C: '',
+      D: '',
+      E: `Pada tanggal: ${examDateStr || '-'}`,
+    },
+    {
+      A: '',
+      B: '',
+      C: '',
+      D: '',
+      E: 'Ketua Panitia Ujian,',
+    },
+    { A: '' },
+    { A: '' },
+    { A: '' },
+    {
+      A: '',
+      B: config.headmasterName,
+      C: '',
+      D: '',
+      E: config.committeeChairmanName,
+    },
+    {
+      A: '',
+      B: `${headmasterIdLabel}. ${config.headmasterNip || '-'}`,
+      C: '',
+      D: '',
+      E: `${chairmanIdLabel}. ${config.committeeChairmanNip || '-'}`,
+    },
+  ];
+
+  const wsPengesahan = XLSX.utils.json_to_sheet(pengesahanRows, { skipHeader: true });
+  wsPengesahan['!cols'] = [
+    { wch: 4 },
+    { wch: 40 }, // Kolom Kiri: Kepala Sekolah
+    { wch: 6 },
+    { wch: 6 },
+    { wch: 40 }, // Kolom Kanan: Ketua Panitia
+  ];
+  XLSX.utils.book_append_sheet(wb, wsPengesahan, 'Lembar_Pengesahan');
 
   // Write and download
   XLSX.writeFile(wb, `Jadwal_Ujian_Lengkap_${config.schoolName.replace(/\s+/g, '_')}_${config.academicYear.replace(/\//g, '-')}.xlsx`);

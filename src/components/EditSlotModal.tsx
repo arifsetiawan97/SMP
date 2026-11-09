@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, Check, AlertTriangle, ShieldCheck, User, MapPin, Clock, BookOpen, Layers } from 'lucide-react';
 import { ExamScheduleSlot, Teacher, Subject, ClassRoom, ExamRoom, ExamTimeConfig } from '../types';
+import { isTeacherTeachingSubject } from '../services/scheduleAlgorithm';
 
 interface EditSlotModalProps {
   slot: ExamScheduleSlot;
@@ -54,16 +55,16 @@ export const EditSlotModal: React.FC<EditSlotModalProps> = ({
       };
     }
 
-    // 2. Check subject conflict (Guru mengajar mapel tsb)
-    const teachesSubject = teacher.subjects.some(
-      (sub) =>
-        sub.toLowerCase().includes(formData.subjectName.toLowerCase()) ||
-        formData.subjectName.toLowerCase().includes(sub.toLowerCase())
-    );
+    // 2. Check subject conflict (Kriteria Khusus: Guru mengajar mapel yang diujikan)
+    const teachesSubject = isTeacherTeachingSubject(teacher, {
+      name: formData.subjectName,
+      code: formData.subjectCode,
+      id: formData.subjectId,
+    });
     if (teachesSubject && config.preventTeachingSubjectConflict) {
       return {
-        level: 'warning',
-        message: `Peringatan: ${teacher.name} adalah guru pengampu mata pelajaran ${formData.subjectName}.`,
+        level: 'error',
+        message: `Pelanggaran Kriteria Khusus: ${teacher.name} adalah guru pengampu mata pelajaran ${formData.subjectName}. Dilarang mengawas pada jam ujian mapel ini!`,
       };
     }
 

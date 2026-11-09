@@ -115,6 +115,108 @@ export function calculateSessionTimes(
 }
 
 /**
+ * Check whether a teacher teaches a specific subject (exact, synonym, code, or keyword)
+ * Used to enforce the strict rule: Subject teachers must NEVER invigilate during their subject's exam session
+ */
+export function isTeacherTeachingSubject(
+  teacher: Teacher,
+  subject: { name: string; code?: string; id?: string }
+): boolean {
+  if (!teacher || !teacher.subjects || teacher.subjects.length === 0 || !subject) {
+    return false;
+  }
+
+  const clean = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[()[\]{}]/g, ' ')
+      .replace(/[\/&,]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const subName = clean(subject.name || '');
+  const subCode = clean(subject.code || '');
+
+  // Core keyword dictionary for standard Indonesian school subjects
+  const getSubjectKeywords = (str: string, code: string): string[] => {
+    const combined = `${str} ${code}`.toLowerCase();
+    const keywords: string[] = [str, code].filter(Boolean);
+
+    // Bahasa Indonesia
+    if (combined.includes('indonesia') || combined.includes('bin') || combined.includes('indo')) {
+      keywords.push('indonesia', 'bin', 'b.indo', 'bahasa indonesia', 'bindo');
+    }
+    // Bahasa Inggris
+    if (combined.includes('inggris') || combined.includes('big') || combined.includes('english')) {
+      keywords.push('inggris', 'big', 'b.inggris', 'bahasa inggris', 'bing');
+    }
+    // Matematika
+    if (combined.includes('matematika') || combined.includes('mtk') || combined.includes('math')) {
+      keywords.push('matematika', 'mtk', 'math');
+    }
+    // IPA (Ilmu Pengetahuan Alam, Sains, Fisika, Biologi)
+    if (combined.includes('ipa') || combined.includes('alam') || combined.includes('sains') || combined.includes('fisika') || combined.includes('biologi')) {
+      keywords.push('ipa', 'alam', 'sains', 'ilmu pengetahuan alam', 'fisika', 'biologi');
+    }
+    // IPS (Ilmu Pengetahuan Sosial, Sejarah, Geografi, Ekonomi)
+    if (combined.includes('ips') || combined.includes('sosial') || combined.includes('sejarah') || combined.includes('geografi') || combined.includes('ekonomi')) {
+      keywords.push('ips', 'sosial', 'ilmu pengetahuan sosial', 'sejarah', 'geografi', 'ekonomi');
+    }
+    // Pendidikan Agama & Budi Pekerti (PABP, PAI, dll)
+    if (combined.includes('agama') || combined.includes('pabp') || combined.includes('pai') || combined.includes('budi pekerti') || combined.includes('islam') || combined.includes('kristen') || combined.includes('katolik')) {
+      keywords.push('agama', 'pabp', 'pai', 'pendidikan agama', 'budi pekerti');
+    }
+    // Pendidikan Pancasila & Kewarganegaraan (PPKn, PKn, Pancasila)
+    if (combined.includes('pancasila') || combined.includes('ppkn') || combined.includes('pkn') || combined.includes('kewarganegaraan')) {
+      keywords.push('pancasila', 'ppkn', 'pkn', 'kewarganegaraan', 'ppk');
+    }
+    // Informatika & Prakarya (INF, TIK, Prakarya, Komputer)
+    if (combined.includes('informa') || combined.includes('prakarya') || combined.includes('inf') || combined.includes('tik') || combined.includes('komputer')) {
+      keywords.push('informatika', 'prakarya', 'inf', 'tik', 'komputer');
+    }
+    // PJOK (Pendidikan Jasmani, Olahraga, Penjasorkes)
+    if (combined.includes('pjok') || combined.includes('jasmani') || combined.includes('olahraga') || combined.includes('penjas') || combined.includes('penjaskes')) {
+      keywords.push('pjok', 'jasmani', 'olahraga', 'penjas', 'penjaskes');
+    }
+    // Seni Budaya & Muatan Lokal / Bahasa Daerah
+    if (combined.includes('seni') || combined.includes('budaya') || combined.includes('sbd') || combined.includes('mulok') || combined.includes('daerah') || combined.includes('jawa') || combined.includes('sunda') || combined.includes('bdar')) {
+      keywords.push('seni', 'budaya', 'sbd', 'mulok', 'daerah', 'seni budaya', 'bdar');
+    }
+
+    return keywords;
+  };
+
+  const subjectKeywords = getSubjectKeywords(subName, subCode);
+
+  return teacher.subjects.some((teachSub) => {
+    const tClean = clean(teachSub);
+    if (!tClean) return false;
+
+    // 1. Direct equality or substring containment
+    if (subName && (tClean.includes(subName) || subName.includes(tClean))) {
+      return true;
+    }
+    if (subCode && (tClean.includes(subCode) || subCode.includes(tClean))) {
+      return true;
+    }
+
+    // 2. Keyword overlap check
+    const teacherKeywords = getSubjectKeywords(tClean, '');
+    const hasOverlap = subjectKeywords.some((sk) =>
+      teacherKeywords.some((tk) => {
+        if (sk === tk) return true;
+        if (sk.length >= 3 && tk.length >= 3 && (sk.includes(tk) || tk.includes(sk))) {
+          return true;
+        }
+        return false;
+      })
+    );
+
+    return hasOverlap;
+  });
+}
+
+/**
  * Generate dates array skipping non-active days according to activeDays
  */
 export function generateExamDates(
@@ -351,6 +453,7 @@ export function generateAutomaticSchedule(
           grade: cls.grade,
           subjectId: classSubject.id,
           subjectName: classSubject.name,
+          subjectCode: classSubject.code,
           roomId: assignedRoom.id,
           roomName: assignedRoom.name,
           classIds: [cls.id],
@@ -422,13 +525,11 @@ function selectBestInvigilator(params: SelectInvigilatorParams): Teacher | null 
     // 2. Exclude if already invigilating another room in this identical session
     if (assignedInCurrentSession.has(teacher.id)) return false;
 
-    // 3. Subject conflict: Guru mapel dilarang mengawas ujian mapel yang diajarkannya
+    // 3. Subject conflict: Guru mapel dilarang mengawas ujian mapel yang diajarkannya (Kriteria Khusus Wajib)
     if (config.preventTeachingSubjectConflict) {
-      const teachesSubject = teacher.subjects.some((subName) =>
-        subName.toLowerCase().includes(currentSubject.name.toLowerCase()) ||
-        currentSubject.name.toLowerCase().includes(subName.toLowerCase())
-      );
-      if (teachesSubject) return false;
+      if (isTeacherTeachingSubject(teacher, currentSubject)) {
+        return false;
+      }
     }
 
     // 4. Class conflict: Guru dilarang mengawas kelas ajarannya
@@ -451,21 +552,41 @@ function selectBestInvigilator(params: SelectInvigilatorParams): Teacher | null 
   });
 
   if (eligibleCandidates.length === 0) {
-    // Fallback: If no candidate without conflicts, try relaxing class conflict first before subject conflict
-    const fallbackCandidates = activeTeachers.filter((t) => {
+    // Level 1 Fallback: Relax class conflict & daily count, but STRICTLY MAINTAIN subject conflict!
+    // Guru mata pelajaran TIDAK BOLEH mengawas pada mapel yang diujikan (e.g. Guru B. Indonesia dilarang mengawas ujian B. Indonesia)
+    const fallbackNoSubjectConflict = activeTeachers.filter((t) => {
+      if (excludeTeacherId && t.id === excludeTeacherId) return false;
+      if (assignedInCurrentSession.has(t.id)) return false;
+      if (config.preventTeachingSubjectConflict && isTeacherTeachingSubject(t, currentSubject)) {
+        return false; // Tetap dilarang keras mengawas mapel sendiri
+      }
+      return true;
+    });
+
+    if (fallbackNoSubjectConflict.length > 0) {
+      // Pick candidate with lowest assignment count
+      fallbackNoSubjectConflict.sort((a, b) => {
+        const countA = teacherAssignmentCounts.get(a.id) || 0;
+        const countB = teacherAssignmentCounts.get(b.id) || 0;
+        return countA - countB;
+      });
+      return fallbackNoSubjectConflict[0];
+    }
+
+    // Level 2 Fallback: Only if all available teachers in school teach this subject (almost impossible with normal staffing)
+    const absoluteFallback = activeTeachers.filter((t) => {
       if (excludeTeacherId && t.id === excludeTeacherId) return false;
       if (assignedInCurrentSession.has(t.id)) return false;
       return true;
     });
 
-    if (fallbackCandidates.length === 0) return null;
-    // Pick candidate with lowest assignment count
-    fallbackCandidates.sort((a, b) => {
+    if (absoluteFallback.length === 0) return null;
+    absoluteFallback.sort((a, b) => {
       const countA = teacherAssignmentCounts.get(a.id) || 0;
       const countB = teacherAssignmentCounts.get(b.id) || 0;
       return countA - countB;
     });
-    return fallbackCandidates[0];
+    return absoluteFallback[0];
   }
 
   // Scoring candidates:
@@ -602,19 +723,20 @@ export function computeScheduleWorkloadAndAudits(
         }
         currentAssigned.push(tId);
 
-        // 2. Subject Conflict Check (Guru mengajar mapel tsb)
-        const teachesSubject = teacher.subjects.some(
-          (sub) => sub.toLowerCase().includes(slot.subjectName.toLowerCase()) ||
-                   slot.subjectName.toLowerCase().includes(sub.toLowerCase())
-        );
+        // 2. Subject Conflict Check (Kriteria Khusus: Guru mengajar mapel yang diujikan)
+        const teachesSubject = isTeacherTeachingSubject(teacher, {
+          name: slot.subjectName,
+          code: slot.subjectCode,
+          id: slot.subjectId,
+        });
         if (teachesSubject && config.preventTeachingSubjectConflict) {
           stat.hasSubjectConflictWarning = true;
           conflicts.push({
             slotId: slot.id,
             slotInfo: `${slot.dateStr} - Sesi ${slot.sessionIndex} (${slot.roomName})`,
-            severity: 'warning',
+            severity: 'error',
             type: 'SUBJECT_CONFLICT',
-            message: `${teacher.name} adalah guru pengampu ${slot.subjectName}. Disarankan ditukar agar tidak terjadi konflik kepentingan.`,
+            message: `Pelanggaran Kriteria Khusus: ${teacher.name} adalah guru pengampu ${slot.subjectName}. Guru mata pelajaran dilarang mengawas pada jam ujian mapel yang diujikan!`,
           });
         }
 

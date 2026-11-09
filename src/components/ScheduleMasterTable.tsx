@@ -1217,6 +1217,54 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
         </div>
       )}
 
+      {/* Lembar Pengesahan Jadwal Ujian: Kepala Sekolah Kiri, Ketua Panitia Kanan */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs mt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-5 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-sm">🏛️</span>
+            <div>
+              <h4 className="font-bold text-slate-900 text-sm">Lembar Pengesahan Jadwal Ujian & Tugas Pengawas</h4>
+              <p className="text-xs text-slate-500">
+                Format resmi kedinasan: Kepala Sekolah di sisi kiri (Mengetahui) dan Ketua Panitia Ujian di sisi kanan (Pelaksana).
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+            ✓ Kepala Sekolah (Kiri) • Ketua Panitia (Kanan)
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-center max-w-3xl mx-auto py-2">
+          {/* SISI KIRI: Kepala Sekolah */}
+          <div className="p-5 rounded-xl bg-slate-50/80 border border-slate-200 text-center">
+            <p className="text-xs text-slate-500 font-medium">Mengetahui,</p>
+            <p className="text-xs font-bold text-slate-800 mt-0.5">Kepala {config.schoolName}</p>
+            <div className="my-7 text-[11px] text-slate-300 italic">
+              (Tanda Tangan & Cap Resmi Sekolah)
+            </div>
+            <p className="text-xs font-bold text-slate-950 underline">{config.headmasterName || 'Nama Kepala Sekolah'}</p>
+            <p className="text-[11px] text-slate-600 font-mono mt-0.5">
+              {config.headmasterIdType || 'NIP'}. {config.headmasterNip || '-'}
+            </p>
+          </div>
+
+          {/* SISI KANAN: Ketua Panitia */}
+          <div className="p-5 rounded-xl bg-slate-50/80 border border-slate-200 text-center">
+            <p className="text-xs text-slate-500 font-medium">
+              Ditetapkan di: {config.kabupaten ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '') : 'Sekolah'}
+            </p>
+            <p className="text-xs font-bold text-slate-800 mt-0.5">Ketua Panitia Ujian</p>
+            <div className="my-7 text-[11px] text-slate-300 italic">
+              (Tanda Tangan Panitia)
+            </div>
+            <p className="text-xs font-bold text-slate-950 underline">{config.committeeChairmanName || 'Nama Ketua Panitia'}</p>
+            <p className="text-[11px] text-slate-600 font-mono mt-0.5">
+              {config.committeeChairmanIdType || 'NIP'}. {config.committeeChairmanNip || '-'}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* In-App Single Slot Deletion Modal */}
       {slotToDelete && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-100">

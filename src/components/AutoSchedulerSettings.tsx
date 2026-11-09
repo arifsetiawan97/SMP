@@ -962,103 +962,165 @@ export const AutoSchedulerSettings: React.FC<AutoSchedulerSettingsProps> = ({
                 </div>
               </div>
 
-              {/* Headmaster Information & NIP / NIPPPK */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800 text-[11px] block">Kepala Sekolah (Penandatangan Utama):</span>
-                  <div className="flex items-center gap-1 bg-white p-0.5 rounded-md border border-slate-200 text-[10px]">
-                    {(['NIP', 'NIPPPK', 'NUPTK'] as const).map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setConfig({ ...config, headmasterIdType: type })}
-                        className={`px-1.5 py-0.5 rounded font-bold cursor-pointer transition-all ${
-                          (config.headmasterIdType || 'NIP') === type
-                            ? 'bg-indigo-600 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
+              {/* Lembar Pengesahan: Kepala Sekolah Kiri, Ketua Panitia Kanan */}
+              <div className="pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                    <span>✍️</span>
+                    <span>Pengaturan Lembar Pengesahan: Kepala Sekolah (Kiri) & Ketua Panitia (Kanan)</span>
+                  </span>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
+                    Format Standar Kedinasan
+                  </span>
                 </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 font-semibold">Nama Lengkap & Gelar</label>
-                  <input
-                    type="text"
-                    value={config.headmasterName}
-                    onChange={(e) => setConfig({ ...config, headmasterName: e.target.value })}
-                    className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 font-semibold">
-                    {config.headmasterIdType || 'NIP'} Kepala Sekolah
-                  </label>
-                  <input
-                    type="text"
-                    value={config.headmasterNip}
-                    onChange={(e) => setConfig({ ...config, headmasterNip: e.target.value })}
-                    placeholder={
-                      config.headmasterIdType === 'NIPPPK'
-                        ? '19850612 202221 1 002'
-                        : config.headmasterIdType === 'NUPTK'
-                        ? '4538769201948293'
-                        : '19680315 199303 1 004'
-                    }
-                    className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-mono"
-                  />
-                </div>
-              </div>
 
-              {/* Committee Chairman Information & NIP / NIPPPK */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800 text-[11px] block">Ketua Panitia Ujian:</span>
-                  <div className="flex items-center gap-1 bg-white p-0.5 rounded-md border border-slate-200 text-[10px]">
-                    {(['NIP', 'NIPPPK', 'NUPTK'] as const).map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setConfig({ ...config, committeeChairmanIdType: type })}
-                        className={`px-1.5 py-0.5 rounded font-bold cursor-pointer transition-all ${
-                          (config.committeeChairmanIdType || 'NIP') === type
-                            ? 'bg-indigo-600 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* KOLOM KIRI: Kepala Sekolah */}
+                  <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-200/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-600 text-white">
+                          Kiri
+                        </span>
+                        <span className="font-bold text-slate-900 text-xs">Kepala Sekolah (Mengetahui):</span>
+                      </div>
+                      <div className="flex items-center gap-1 bg-white p-0.5 rounded-md border border-slate-200 text-[10px]">
+                        {(['NIP', 'NIPPPK', 'NUPTK'] as const).map((type) => (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setConfig({ ...config, headmasterIdType: type })}
+                            className={`px-1.5 py-0.5 rounded font-bold cursor-pointer transition-all ${
+                              (config.headmasterIdType || 'NIP') === type
+                                ? 'bg-indigo-600 text-white shadow-2xs'
+                                : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-semibold">Nama Lengkap & Gelar</label>
+                      <input
+                        type="text"
+                        value={config.headmasterName}
+                        onChange={(e) => setConfig({ ...config, headmasterName: e.target.value })}
+                        className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-semibold">
+                        {config.headmasterIdType || 'NIP'} Kepala Sekolah
+                      </label>
+                      <input
+                        type="text"
+                        value={config.headmasterNip}
+                        onChange={(e) => setConfig({ ...config, headmasterNip: e.target.value })}
+                        placeholder={
+                          config.headmasterIdType === 'NIPPPK'
+                            ? '19850612 202221 1 002'
+                            : config.headmasterIdType === 'NUPTK'
+                            ? '4538769201948293'
+                            : '19680315 199303 1 004'
+                        }
+                        className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* KOLOM KANAN: Ketua Panitia Ujian */}
+                  <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-200/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-600 text-white">
+                          Kanan
+                        </span>
+                        <span className="font-bold text-slate-900 text-xs">Ketua Panitia Ujian:</span>
+                      </div>
+                      <div className="flex items-center gap-1 bg-white p-0.5 rounded-md border border-slate-200 text-[10px]">
+                        {(['NIP', 'NIPPPK', 'NUPTK'] as const).map((type) => (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setConfig({ ...config, committeeChairmanIdType: type })}
+                            className={`px-1.5 py-0.5 rounded font-bold cursor-pointer transition-all ${
+                              (config.committeeChairmanIdType || 'NIP') === type
+                                ? 'bg-blue-600 text-white shadow-2xs'
+                                : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-semibold">Nama Lengkap & Gelar</label>
+                      <input
+                        type="text"
+                        value={config.committeeChairmanName}
+                        onChange={(e) => setConfig({ ...config, committeeChairmanName: e.target.value })}
+                        className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-semibold">
+                        {config.committeeChairmanIdType || 'NIP'} Ketua Panitia
+                      </label>
+                      <input
+                        type="text"
+                        value={config.committeeChairmanNip}
+                        onChange={(e) => setConfig({ ...config, committeeChairmanNip: e.target.value })}
+                        placeholder={
+                          config.committeeChairmanIdType === 'NIPPPK'
+                            ? '19880914 202321 2 005'
+                            : config.committeeChairmanIdType === 'NUPTK'
+                            ? '7845129304918234'
+                            : '19750820 200012 2 002'
+                        }
+                        className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-mono"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 font-semibold">Nama Lengkap & Gelar</label>
-                  <input
-                    type="text"
-                    value={config.committeeChairmanName}
-                    onChange={(e) => setConfig({ ...config, committeeChairmanName: e.target.value })}
-                    className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-500 font-semibold">
-                    {config.committeeChairmanIdType || 'NIP'} Ketua Panitia
-                  </label>
-                  <input
-                    type="text"
-                    value={config.committeeChairmanNip}
-                    onChange={(e) => setConfig({ ...config, committeeChairmanNip: e.target.value })}
-                    placeholder={
-                      config.committeeChairmanIdType === 'NIPPPK'
-                        ? '19880914 202321 2 005'
-                        : config.committeeChairmanIdType === 'NUPTK'
-                        ? '7845129304918234'
-                        : '19750820 200012 2 002'
-                    }
-                    className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-mono"
-                  />
+
+                {/* Pratinjau Visual Lembar Pengesahan */}
+                <div className="mt-3 p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                      Pratinjau Lembar Pengesahan di Dokumen Resmi:
+                    </span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                      Kepala Sekolah (Kiri) • Ketua Panitia (Kanan)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-center py-2.5 px-3 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+                    {/* Sisi Kiri: Kepala Sekolah */}
+                    <div className="border-r border-slate-200 pr-2">
+                      <p className="text-slate-500 text-[11px]">Mengetahui,</p>
+                      <p className="font-semibold text-slate-800 text-[11px]">Kepala {config.schoolName}</p>
+                      <div className="my-3 text-slate-300 italic text-[10px]">[Tanda Tangan & Cap Sekolah]</div>
+                      <p className="font-bold text-slate-900 underline text-xs">{config.headmasterName || 'Nama Kepala Sekolah'}</p>
+                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                        {config.headmasterIdType || 'NIP'}. {config.headmasterNip || '-'}
+                      </p>
+                    </div>
+
+                    {/* Sisi Kanan: Ketua Panitia */}
+                    <div className="pl-2">
+                      <p className="text-slate-500 text-[11px]">
+                        {config.kabupaten ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '') : 'Sekolah'}
+                      </p>
+                      <p className="font-semibold text-slate-800 text-[11px]">Ketua Panitia Ujian</p>
+                      <div className="my-3 text-slate-300 italic text-[10px]">[Tanda Tangan]</div>
+                      <p className="font-bold text-slate-900 underline text-xs">{config.committeeChairmanName || 'Nama Ketua Panitia'}</p>
+                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                        {config.committeeChairmanIdType || 'NIP'}. {config.committeeChairmanNip || '-'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1074,29 +1136,44 @@ export const AutoSchedulerSettings: React.FC<AutoSchedulerSettingsProps> = ({
             </div>
 
             <div className="space-y-4">
-              {/* Constraint 1: Subject Conflict */}
-              <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50/80 transition-colors cursor-pointer">
-                <input
-                  id="checkbox-prevent-subject-conflict"
-                  type="checkbox"
-                  checked={config.preventTeachingSubjectConflict}
-                  onChange={(e) => setConfig({ ...config, preventTeachingSubjectConflict: e.target.checked })}
-                  className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
-                />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-900">
-                      Proteksi Konflik Mata Pelajaran (Wajib)
-                    </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800">
-                      Direkomendasikan
-                    </span>
+              {/* Constraint 1: Subject Conflict (Kriteria Khusus Wajib) */}
+              <div className="p-3.5 rounded-xl border-2 border-emerald-300 bg-emerald-50/40 space-y-2">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    id="checkbox-prevent-subject-conflict"
+                    type="checkbox"
+                    checked={config.preventTeachingSubjectConflict}
+                    onChange={(e) => setConfig({ ...config, preventTeachingSubjectConflict: e.target.checked })}
+                    className="mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-slate-900">
+                        Kriteria Khusus: Guru Mapel Dilarang Mengawas Mapel yang Diujikan
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white shadow-2xs">
+                        Kriteria Khusus Wajib
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                      Pengawas guru mata pelajaran <strong>tidak diperbolehkan</strong> mengawas pada jam/sesi ujian mata pelajaran yang diampunya untuk menjamin integritas evaluasi.
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Guru yang mengampu mata pelajaran tertentu <strong>tidak diperbolehkan</strong> menjadi pengawas pada sesi ujian mata pelajaran tersebut.
-                  </p>
+                </label>
+
+                {/* Practical Example Box */}
+                <div className="p-2.5 rounded-lg bg-white border border-emerald-200 text-xs text-slate-700 flex items-start gap-2">
+                  <span className="text-sm">💡</span>
+                  <div>
+                    <strong className="text-emerald-950 font-bold block mb-0.5">Contoh Penerapan Nyata:</strong>
+                    <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-600">
+                      <li>Guru <strong>Bahasa Indonesia</strong> tidak boleh mengawas di jam ujian Bahasa Indonesia.</li>
+                      <li>Guru <strong>Matematika</strong> tidak boleh mengawas di jam ujian Matematika.</li>
+                      <li>Guru <strong>IPA</strong> tidak boleh mengawas di jam ujian IPA (tetap bertugas di sesi mapel lain).</li>
+                    </ul>
+                  </div>
                 </div>
-              </label>
+              </div>
 
               {/* Constraint 2: Class Conflict */}
               <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50/80 transition-colors cursor-pointer">
