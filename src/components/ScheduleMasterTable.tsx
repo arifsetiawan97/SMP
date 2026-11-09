@@ -55,7 +55,7 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
   // Multi-select filter states
   const [selectedDays, setSelectedDays] = useState<string[]>([]); // empty means ALL days
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]); // empty means ALL rooms
-  const [selectedGrade, setSelectedGrade] = useState<string>('all');
+  const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'table' | 'cards' | 'matrix'>('table');
   const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
@@ -132,8 +132,14 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
         return false;
       }
 
-      // Grade filter
-      if (selectedGrade !== 'all' && String(slot.grade) !== selectedGrade) return false;
+      // Subject filter
+      if (
+        selectedSubject !== 'all' &&
+        slot.subjectId !== selectedSubject &&
+        slot.subjectName !== selectedSubject
+      ) {
+        return false;
+      }
 
       // Teacher filter
       if (
@@ -149,7 +155,6 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
         const query = searchTerm.toLowerCase();
         const matchSubject = slot.subjectName.toLowerCase().includes(query);
         const matchRoom = slot.roomName.toLowerCase().includes(query);
-        const matchClasses = slot.classNames.some((c) => c.toLowerCase().includes(query));
         const matchTeacher1 = (slot.invigilator1Name || '').toLowerCase().includes(query);
         const matchTeacher2 = (slot.invigilator2Name || '').toLowerCase().includes(query);
         const matchDate = slot.dateStr.toLowerCase().includes(query);
@@ -157,7 +162,6 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
         if (
           !matchSubject &&
           !matchRoom &&
-          !matchClasses &&
           !matchTeacher1 &&
           !matchTeacher2 &&
           !matchDate
@@ -168,20 +172,20 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
 
       return true;
     });
-  }, [slots, selectedDays, selectedRooms, selectedGrade, selectedTeacher, searchTerm]);
+  }, [slots, selectedDays, selectedRooms, selectedSubject, selectedTeacher, searchTerm]);
 
   // Active filters count
   const activeFilterCount =
     selectedDays.length +
     selectedRooms.length +
-    (selectedGrade !== 'all' ? 1 : 0) +
+    (selectedSubject !== 'all' ? 1 : 0) +
     (selectedTeacher !== 'all' ? 1 : 0) +
     (searchTerm.trim() ? 1 : 0);
 
   const resetAllFilters = () => {
     setSelectedDays([]);
     setSelectedRooms([]);
-    setSelectedGrade('all');
+    setSelectedSubject('all');
     setSelectedTeacher('all');
     setSearchTerm('');
     setRoomFilterSearch('');
@@ -615,33 +619,35 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
               )}
             </div>
 
-            {/* 3. Dropdown Tingkat Kelas */}
+            {/* 3. Dropdown Mata Pelajaran */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 mb-1 flex items-center justify-between">
                 <span className="flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5 text-indigo-500" />
-                  Tingkat Kelas
+                  <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
+                  Mata Pelajaran
                 </span>
-                {selectedGrade !== 'all' && (
-                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded">
-                    Kelas {selectedGrade}
+                {selectedSubject !== 'all' && (
+                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded max-w-[100px] truncate">
+                    {selectedSubject}
                   </span>
                 )}
               </label>
               <select
-                id="filter-grade-select"
-                value={selectedGrade}
-                onChange={(e) => setSelectedGrade(e.target.value)}
+                id="filter-subject-select"
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
                 className={`w-full px-3 py-2 rounded-xl text-xs font-medium border focus:outline-hidden focus:ring-1 focus:ring-indigo-500 transition-colors cursor-pointer ${
-                  selectedGrade !== 'all'
+                  selectedSubject !== 'all'
                     ? 'border-indigo-400 bg-indigo-50/50 text-indigo-900 ring-1 ring-indigo-300'
                     : 'border-slate-200 bg-white text-slate-700'
                 }`}
               >
-                <option value="all">Semua Tingkat (Kelas 7, 8, 9)</option>
-                <option value="7">Kelas VII (7)</option>
-                <option value="8">Kelas VIII (8)</option>
-                <option value="9">Kelas IX (9)</option>
+                <option value="all">Semua Mata Pelajaran ({subjects.length} Mapel)</option>
+                {subjects.map((sub) => (
+                  <option key={sub.id} value={sub.name}>
+                    {sub.name} ({sub.code})
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -808,13 +814,13 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
                 );
               })}
 
-              {selectedGrade !== 'all' && (
+              {selectedSubject !== 'all' && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-semibold">
-                  <Users className="w-3 h-3 text-purple-500" />
-                  <span>Kelas {selectedGrade}</span>
+                  <BookOpen className="w-3 h-3 text-purple-500" />
+                  <span className="max-w-[140px] truncate">{selectedSubject}</span>
                   <button
                     type="button"
-                    onClick={() => setSelectedGrade('all')}
+                    onClick={() => setSelectedSubject('all')}
                     className="p-0.5 hover:bg-purple-200 rounded text-purple-600 cursor-pointer"
                   >
                     <X className="w-3 h-3" />
@@ -898,7 +904,6 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
                   <th className="px-2.5 py-3 text-center w-8">No</th>
                   <th className="px-3.5 py-3">Hari & Tanggal</th>
                   <th className="px-3.5 py-3">Sesi / Waktu</th>
-                  <th className="px-3.5 py-3">Tingkat & Kelas</th>
                   <th className="px-3.5 py-3">Ruang</th>
                   <th className="px-3.5 py-3">Mata Pelajaran</th>
                   <th className="px-3.5 py-3">Pengawas Utama</th>
@@ -945,11 +950,6 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
                         </span>
                         <span className="block text-[11px] text-slate-500 font-mono">
                           {slot.startTime} - {slot.endTime}
-                        </span>
-                      </td>
-                      <td className="px-3.5 py-3 whitespace-nowrap">
-                        <span className="inline-block px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-semibold text-[11px] border border-indigo-200">
-                          Kelas {slot.classNames.join(', ')}
                         </span>
                       </td>
                       <td className="px-3.5 py-3 whitespace-nowrap">
@@ -1072,8 +1072,8 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
                             {slot.roomName}
                           </span>
                         </div>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
-                          {slot.classNames.join(', ')}
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                          {slot.studentCount} Siswa
                         </span>
                       </div>
 
@@ -1173,8 +1173,6 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
                       <MapPin className="w-3.5 h-3.5 text-slate-400" />
                       {slot.roomName}
                     </span>
-                    <span>•</span>
-                    <span>Kelas {slot.classNames.join(', ')}</span>
                     <span>•</span>
                     <span>{slot.studentCount} Siswa</span>
                   </div>

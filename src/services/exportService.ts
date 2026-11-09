@@ -154,12 +154,11 @@ export function generateMasterSchedulePDF(
     documentSubtitle: `Tahun Ajaran ${config.academicYear} - Semester ${config.semester}`,
   });
 
-  // Prepare table data grouped by Day & Session & Room
+  // Prepare table data grouped by Day & Session & Room (TANPA KELAS)
   const tableRows = slots.map((s, idx) => [
     idx + 1,
     s.dateStr,
     `Sesi ${s.sessionIndex}\n(${s.startTime} - ${s.endTime})`,
-    `Kelas ${s.classNames.join(', ')}`,
     s.roomName,
     s.subjectName,
     s.invigilator1Name || '(Belum Dialokasikan)',
@@ -172,8 +171,7 @@ export function generateMasterSchedulePDF(
       'No',
       'Hari & Tanggal',
       'Waktu / Sesi',
-      'Kelas',
-      'Ruang',
+      'Ruang Ujian',
       'Mata Pelajaran',
       'Pengawas Utama',
       config.invigilatorsPerRoom === 2 ? 'Pengawas Pendamping' : 'Keterangan',
@@ -193,13 +191,12 @@ export function generateMasterSchedulePDF(
     },
     columnStyles: {
       0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 38 },
-      2: { cellWidth: 30, halign: 'center' },
-      3: { cellWidth: 24, halign: 'center' },
-      4: { cellWidth: 24, halign: 'center' },
+      1: { cellWidth: 42 },
+      2: { cellWidth: 32, halign: 'center' },
+      3: { cellWidth: 32, halign: 'center' },
+      4: { cellWidth: 60 },
       5: { cellWidth: 50 },
-      6: { cellWidth: 50 },
-      7: { cellWidth: 43 },
+      6: { cellWidth: 43 },
     },
   });
 
@@ -303,32 +300,30 @@ export function generateTeacherSlipsPDF(
     doc.text(`: ${teacher.subjects.join(', ') || '-'}`, 68, infoBoxY + 12.5);
     doc.text(`: ${teacherSlots.length} Sesi (${teacherSlots.length * config.sessionDurationMinutes} Menit)`, 68, infoBoxY + 18.5);
 
-    // Table of assigned duties
+    // Table of assigned duties (Tanpa Kelas)
     const tableData = teacherSlots.map((s, idx) => [
       idx + 1,
       s.dateStr,
       `Sesi ${s.sessionIndex}\n(${s.startTime} - ${s.endTime})`,
       s.roomName,
-      s.classNames.join(', '),
       s.subjectName,
       s.invigilator1Id === teacher.id ? 'Pengawas Utama (1)' : 'Pengawas Pendamping (2)',
     ]);
 
     autoTable(doc, {
       startY: infoBoxY + 28,
-      head: [['No', 'Hari & Tanggal', 'Waktu / Sesi', 'Ruang', 'Kelas', 'Mata Pelajaran', 'Peran']],
-      body: tableData.length > 0 ? tableData : [['-', 'Tidak ada jadwal', '-', '-', '-', '-', '-']],
+      head: [['No', 'Hari & Tanggal', 'Waktu / Sesi', 'Ruang', 'Mata Pelajaran', 'Peran']],
+      body: tableData.length > 0 ? tableData : [['-', 'Tidak ada jadwal', '-', '-', '-', '-']],
       theme: 'grid',
       styles: { fontSize: 8.5, cellPadding: 2.5, valign: 'middle' },
       headStyles: { fillColor: [44, 62, 80], textColor: [255, 255, 255], halign: 'center' },
       columnStyles: {
         0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 30, halign: 'center' },
-        3: { cellWidth: 25, halign: 'center' },
-        4: { cellWidth: 20, halign: 'center' },
-        5: { cellWidth: 35 },
-        6: { cellWidth: 25, halign: 'center' },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 32, halign: 'center' },
+        3: { cellWidth: 30, halign: 'center' },
+        4: { cellWidth: 43 },
+        5: { cellWidth: 25, halign: 'center' },
       },
     });
 
@@ -440,10 +435,10 @@ export function generateAttendanceAndBAP_PDF(
         columnStyles: {
           0: { cellWidth: 8, halign: 'center' },
           1: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
-          2: { cellWidth: 40 },
-          3: { cellWidth: 36 },
+          2: { cellWidth: 39 },
+          3: { cellWidth: 35 },
           4: { cellWidth: 22, halign: 'left' },
-          5: { cellWidth: 36 },
+          5: { cellWidth: 35 },
           6: { cellWidth: 22, halign: 'left' },
         },
       });
@@ -478,9 +473,9 @@ export function generateAttendanceAndBAP_PDF(
         },
         columnStyles: {
           0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' },
-          2: { cellWidth: 50 },
-          3: { cellWidth: 54 },
+          1: { cellWidth: 28, halign: 'center', fontStyle: 'bold' },
+          2: { cellWidth: 48 },
+          3: { cellWidth: 52 },
           4: { cellWidth: 42, halign: 'left' },
         },
       });
@@ -490,33 +485,44 @@ export function generateAttendanceAndBAP_PDF(
     const finalTableY = doc.lastAutoTable?.finalY || 140;
 
     // Check if Catatan Berita Acara & Signatures fit on current page cleanly
-    let boxY = finalTableY + 4;
-    if (boxY + 54 > 282) {
+    let titleY = finalTableY + 8;
+    if (titleY + 68 > 270) {
       doc.addPage('a4', 'portrait');
-      boxY = 22;
+      titleY = 22;
     }
 
-    // Catatan Berita Acara Kejadian Penting
+    // 1. Heading CATATAN BERITA ACARA (Clearly spaced above the box)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
     doc.setTextColor(30, 41, 59);
-    doc.text('CATATAN BERITA ACARA KEJADIAN PENTING / PELAKSANAAN UJIAN:', 12, boxY);
+    doc.text('CATATAN BERITA ACARA KEJADIAN PENTING:', 12, titleY);
 
+    // 2. Kotak Catatan (Starts 5.5mm below heading text baseline, stroke only without opaque fill)
+    const boxTop = titleY + 5;
+    const boxHeight = 22;
     doc.setDrawColor(203, 213, 225);
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(12, boxY + 2.5, 186, 20, 1.5, 1.5, 'FD');
+    doc.setLineWidth(0.3);
+    doc.roundedRect(12, boxTop, 186, boxHeight, 1.5, 1.5, 'D');
 
+    // 3. Kalimat Keterangan di Dalam Kotak (Clearly inside the box, 6mm below boxTop)
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(7.5);
-    doc.setTextColor(148, 163, 184);
+    doc.setTextColor(100, 116, 139);
     doc.text(
-      'Catatan: Jumlah siswa hadir/tidak hadir, kondisi lembar soal & LJK, ketertiban ruang, atau kejadian khusus lainnya.',
-      15,
-      boxY + 7
+      '(Catatan khusus bila ada lembar soal/LJK rusak atau kurang, siswa izin/sakit, pergantian pengawas, dll.)',
+      16,
+      boxTop + 6
     );
 
-    // Lembar Pengesahan: KETUA PANITIA di KIRI, PETUGAS / PANITIA PIKET di KANAN
-    const sigY = boxY + 28;
+    // Ruang catatan tulisan tangan (garis putus-putus)
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineDashPattern([1.5, 1.5], 0);
+    doc.line(16, boxTop + 12, 192, boxTop + 12);
+    doc.line(16, boxTop + 17, 192, boxTop + 17);
+    doc.setLineDashPattern([], 0);
+
+    // 4. Lembar Pengesahan: KETUA PANITIA di KIRI, PETUGAS / PANITIA PIKET di KANAN
+    const sigY = boxTop + boxHeight + 9;
     const chairmanIdLabel = config.committeeChairmanIdType || 'NIP';
     const city = config.kabupaten
       ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '').trim()
@@ -560,15 +566,13 @@ export function generateComprehensiveExcel(
 ): void {
   const wb = XLSX.utils.book_new();
 
-  // Sheet 1: JADWAL UTAMA UJIAN
+  // Sheet 1: JADWAL UTAMA UJIAN (TANPA KELAS)
   const masterData = slots.map((s, idx) => ({
     No: idx + 1,
     'Hari & Tanggal': s.dateStr,
     Sesi: `Sesi ${s.sessionIndex}`,
     'Waktu Mulai': s.startTime,
     'Waktu Selesai': s.endTime,
-    Tingkat: `Kelas ${s.grade}`,
-    Kelas: s.classNames.join(', '),
     Ruang: s.roomName,
     'Mata Pelajaran': s.subjectName,
     'Jumlah Siswa': s.studentCount,
@@ -583,8 +587,6 @@ export function generateComprehensiveExcel(
     { wch: 10 }, // Sesi
     { wch: 12 }, // Jam Mulai
     { wch: 12 }, // Jam Selesai
-    { wch: 10 }, // Tingkat
-    { wch: 12 }, // Kelas
     { wch: 14 }, // Ruang
     { wch: 30 }, // Mapel
     { wch: 14 }, // Jml Siswa
@@ -793,7 +795,6 @@ export async function syncScheduleToGoogleSheets(
       'Sesi',
       'Waktu Mulai',
       'Waktu Selesai',
-      'Kelas',
       'Ruang',
       'Mata Pelajaran',
       'Jumlah Siswa',
@@ -807,7 +808,6 @@ export async function syncScheduleToGoogleSheets(
       `Sesi ${s.sessionIndex}`,
       s.startTime,
       s.endTime,
-      s.classNames.join(', '),
       s.roomName,
       s.subjectName,
       s.studentCount,
