@@ -23,10 +23,12 @@ export function generateTeacherWhatsAppMessage(
     msg += `_Anda tidak memiliki jadwal pengawasan pada periode ujian ini._\n\n`;
   } else {
     teacherSlots.forEach((s, idx) => {
-      const role = s.invigilator1Id === teacher.id ? 'Pengawas Utama' : 'Pengawas Pendamping';
+      const role = config.invigilatorsPerRoom === 2
+        ? (s.invigilator1Id === teacher.id ? 'Pengawas 1' : 'Pengawas 2')
+        : 'Pengawas Ruang';
       msg += `*${idx + 1}. ${s.dateStr}*\n`;
       msg += `   ⏰ Sesi ${s.sessionIndex} (${s.startTime} - ${s.endTime})\n`;
-      msg += `   📍 ${s.roomName} (Kelas ${s.classNames.join(', ')})\n`;
+      msg += `   📍 ${s.roomName}\n`;
       msg += `   📚 Mapel: ${s.subjectName}\n`;
       msg += `   👤 Posisi: ${role}\n\n`;
     });

@@ -31,7 +31,7 @@ interface WorkloadDashboardProps {
     slotId: string;
     slotInfo: string;
     severity: 'error' | 'warning' | 'info';
-    type: 'SUBJECT_CONFLICT' | 'CLASS_CONFLICT' | 'CONSECUTIVE_FATIGUE' | 'DOUBLE_BOOKED' | 'UNASSIGNED';
+    type: 'SUBJECT_CONFLICT' | 'CLASS_CONFLICT' | 'CONSECUTIVE_FATIGUE' | 'DOUBLE_BOOKED' | 'UNASSIGNED' | 'DUPLICATE_PAIRING';
     message: string;
   }[];
 }
@@ -220,7 +220,7 @@ export const WorkloadDashboard: React.FC<WorkloadDashboardProps> = ({
             <tbody className="divide-y divide-slate-100">
               {filteredStats.map((stat, idx) => {
                 const teacher = teachers.find((t) => t.id === stat.teacherId);
-                const hasWarning = stat.hasSubjectConflictWarning || stat.hasConsecutiveWarning;
+                const hasWarning = stat.hasSubjectConflictWarning || stat.hasConsecutiveWarning || stat.hasDuplicatePairingWarning;
 
                 return (
                   <tr key={stat.teacherId} className="hover:bg-slate-50 transition-colors">
@@ -294,6 +294,11 @@ export const WorkloadDashboard: React.FC<WorkloadDashboardProps> = ({
                             {stat.hasSubjectConflictWarning && (
                               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
                                 Mengajar Mapel Ujian
+                              </span>
+                            )}
+                            {stat.hasDuplicatePairingWarning && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-purple-800 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
+                                Duplikasi Pasangan
                               </span>
                             )}
                           </>

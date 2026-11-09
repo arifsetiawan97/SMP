@@ -145,6 +145,7 @@ export interface ExamTimeConfig {
   preventTeachingSubjectConflict: boolean; // guru mapel dilarang mengawas mapelnya
   preventTeachingClassConflict: boolean; // guru dilarang mengawas kelas ajarannya
   balanceWorkloadStrictly: boolean; // membagi beban sesama guru secara seimbang
+  preventDuplicatePairing?: boolean; // Ragam Pasangan: jika 1 guru mengawas beberapa sesi, pengawas 2 (pendamping) harus beda (hanya boleh bertemu 1x)
 }
 
 export interface ExamScheduleSlot {
@@ -203,5 +204,6 @@ export interface TeacherWorkloadStats {
   hasConsecutiveWarning: boolean;
   hasSubjectConflictWarning: boolean;
   hasClassConflictWarning: boolean;
+  hasDuplicatePairingWarning?: boolean;
   scheduleSlots: ExamScheduleSlot[];
 }

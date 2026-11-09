@@ -55,6 +55,7 @@ export const DEFAULT_CONFIG: ExamTimeConfig = {
   preventTeachingSubjectConflict: true, // Guru yang mengajar mapel ini TIDAK BOLEH mengawas
   preventTeachingClassConflict: true, // Guru yang mengajar di kelas ini tidak mengawas kelas tsb
   balanceWorkloadStrictly: true, // Beban tugas merata
+  preventDuplicatePairing: true, // Kriteria Khusus: Ragam Pasangan Pengawas (pendamping wajib beda, hanya bertemu 1x)
 };
 
 export const DEFAULT_SUBJECTS: Subject[] = [

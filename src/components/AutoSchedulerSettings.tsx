@@ -1175,6 +1175,45 @@ export const AutoSchedulerSettings: React.FC<AutoSchedulerSettingsProps> = ({
                 </div>
               </div>
 
+              {/* Constraint 1b: Ragam Pasangan Pengawas (Kriteria Khusus Wajib) */}
+              <div className="p-3.5 rounded-xl border-2 border-indigo-300 bg-indigo-50/40 space-y-2">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    id="checkbox-prevent-duplicate-pairing"
+                    type="checkbox"
+                    checked={config.preventDuplicatePairing !== false}
+                    onChange={(e) => setConfig({ ...config, preventDuplicatePairing: e.target.checked })}
+                    className="mt-0.5 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-slate-900">
+                        Kriteria Khusus: Ragam Pasangan Pengawas (Pengawas 1 & Pengawas 2 Wajib Berbeda)
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white shadow-2xs">
+                        Kriteria Khusus Wajib
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                      Jika dalam 5 hari ujian satu guru mendapat beberapa kali jadwal mengawas (misal 3 kali), maka pengawas pasangannya <strong>wajib berbeda di setiap sesi</strong>. Satu guru hanya boleh bertemu satu guru lain maksimal 1 kali (tidak ada pengawas utama/pendamping, melainkan Pengawas 1 dan Pengawas 2).
+                    </p>
+                  </div>
+                </label>
+
+                {/* Practical Example Box */}
+                <div className="p-2.5 rounded-lg bg-white border border-indigo-200 text-xs text-slate-700 flex items-start gap-2">
+                  <span className="text-sm">🤝</span>
+                  <div>
+                    <strong className="text-indigo-950 font-bold block mb-0.5">Contoh Penerapan Nyata:</strong>
+                    <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-600">
+                      <li>Guru A mengawas 3 sesi: Sesi 1 bersama <strong>Guru B</strong>, Sesi 2 bersama <strong>Guru C</strong>, dan Sesi 3 bersama <strong>Guru D</strong>.</li>
+                      <li>Guru A dan Guru B <strong>tidak akan pernah dipasangkan kembali</strong> di sesi lainnya.</li>
+                      <li>Mencegah kejenuhan dan memastikan objektivitas pengawasan di seluruh ruangan.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               {/* Constraint 2: Class Conflict */}
               <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50/80 transition-colors cursor-pointer">
                 <input
@@ -1266,7 +1305,7 @@ export const AutoSchedulerSettings: React.FC<AutoSchedulerSettingsProps> = ({
                     }`}
                   >
                     <Layers className="w-3.5 h-3.5" />
-                    <span>2 Pengawas / Ruang (Utama & Pendamping)</span>
+                    <span>2 Pengawas / Ruang (Pengawas 1 & Pengawas 2)</span>
                   </button>
                 </div>
               </div>

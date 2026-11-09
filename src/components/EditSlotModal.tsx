@@ -105,6 +105,30 @@ export const EditSlotModal: React.FC<EditSlotModalProps> = ({
     formData.sessionIndex,
   ]);
 
+  const duplicatePairingWarning = useMemo(() => {
+    if (!formData.invigilator1Id || !formData.invigilator2Id) return null;
+    if (formData.invigilator1Id === formData.invigilator2Id) return null;
+    if (config.preventDuplicatePairing === false) return null;
+
+    const id1 = formData.invigilator1Id;
+    const id2 = formData.invigilator2Id;
+    const existingSlot = allSlots.find(
+      (s) =>
+        s.id !== formData.id &&
+        ((s.invigilator1Id === id1 && s.invigilator2Id === id2) ||
+         (s.invigilator1Id === id2 && s.invigilator2Id === id1))
+    );
+
+    if (existingSlot) {
+      const name1 = teachers.find((t) => t.id === id1)?.name || 'Pengawas 1';
+      const name2 = teachers.find((t) => t.id === id2)?.name || 'Pengawas 2';
+      return {
+        message: `Peringatan Kriteria Khusus Ragam Pengawas: ${name1} dan ${name2} sudah pernah bertugas bersama pada ${existingSlot.dateStr} (Sesi ${existingSlot.sessionIndex}, ${existingSlot.roomName}). Disarankan memilih pengawas 2 yang berbeda agar ragam pengawas terpenuhi.`,
+      };
+    }
+    return null;
+  }, [formData.invigilator1Id, formData.invigilator2Id, formData.id, allSlots, config.preventDuplicatePairing, teachers]);
+
   const handleTeacher1Change = (tId: string) => {
     const t = teachers.find((teach) => teach.id === tId);
     setFormData({
@@ -235,11 +259,11 @@ export const EditSlotModal: React.FC<EditSlotModalProps> = ({
             </div>
           </div>
 
-          {/* Invigilator 1 (Pengawas Utama) */}
+          {/* Invigilator 1 (Pengawas 1 / Pengawas Ruang) */}
           <div>
             <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Pengawas Utama (1)</span>
+              <span>{config.invigilatorsPerRoom === 2 ? 'Pengawas 1' : 'Pengawas Ruang'}</span>
             </label>
             <select
               value={formData.invigilator1Id || ''}
@@ -277,12 +301,12 @@ export const EditSlotModal: React.FC<EditSlotModalProps> = ({
             )}
           </div>
 
-          {/* Invigilator 2 (Pengawas Pendamping) */}
+          {/* Invigilator 2 (Pengawas 2) */}
           {config.invigilatorsPerRoom === 2 && (
             <div>
               <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-blue-600" />
-                <span>Pengawas Pendamping (2)</span>
+                <span>Pengawas 2</span>
               </label>
               <select
                 value={formData.invigilator2Id || ''}
@@ -316,6 +340,17 @@ export const EditSlotModal: React.FC<EditSlotModalProps> = ({
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                   )}
                   <span>{conflictP2.message}</span>
+                </div>
+              )}
+
+              {/* Kriteria Khusus: Ragam Pasangan Alert */}
+              {duplicatePairingWarning && (
+                <div className="mt-2 p-2.5 rounded-lg text-xs bg-amber-50 border border-amber-300 text-amber-900 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="font-bold block text-amber-950 mb-0.5">Peringatan Ragam Pengawas:</strong>
+                    <span>{duplicatePairingWarning.message}</span>
+                  </div>
                 </div>
               )}
             </div>

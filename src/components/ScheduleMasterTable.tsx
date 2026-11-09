@@ -906,9 +906,9 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
                   <th className="px-3.5 py-3">Sesi / Waktu</th>
                   <th className="px-3.5 py-3">Ruang</th>
                   <th className="px-3.5 py-3">Mata Pelajaran</th>
-                  <th className="px-3.5 py-3">Pengawas Utama</th>
+                  <th className="px-3.5 py-3">{config.invigilatorsPerRoom === 2 ? 'Pengawas 1' : 'Pengawas Ruang'}</th>
                   {config.invigilatorsPerRoom === 2 && (
-                    <th className="px-3.5 py-3">Pengawas Pendamping</th>
+                    <th className="px-3.5 py-3">Pengawas 2</th>
                   )}
                   <th className="px-3.5 py-3 text-center w-24">Aksi</th>
                 </tr>
@@ -1080,7 +1080,7 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
                       <div className="space-y-1 text-xs">
                         <div className="p-2 rounded-lg bg-white border border-slate-200">
                           <span className="text-[10px] text-slate-400 uppercase font-semibold block">
-                            Pengawas Utama
+                            {config.invigilatorsPerRoom === 2 ? 'Pengawas 1' : 'Pengawas Ruang'}
                           </span>
                           <span className="font-bold text-slate-900">
                             {slot.invigilator1Name || '(Belum Ditentukan)'}
@@ -1090,7 +1090,7 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
                         {config.invigilatorsPerRoom === 2 && (
                           <div className="p-2 rounded-lg bg-white border border-slate-200">
                             <span className="text-[10px] text-slate-400 uppercase font-semibold block">
-                              Pengawas Pendamping
+                              Pengawas 2
                             </span>
                             <span className="font-bold text-slate-900">
                               {slot.invigilator2Name || '-'}

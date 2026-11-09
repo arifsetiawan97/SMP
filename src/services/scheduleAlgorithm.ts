@@ -322,6 +322,11 @@ export function generateAutomaticSchedule(
   // Key: `${teacherId}_day_${dayIndex}` -> Array of sessionIndices
   const dailyTeacherSessions = new Map<string, number[]>();
 
+  // Kriteria Khusus Ragam Pasangan: satu guru hanya boleh bertemu satu guru dengan guru yang lainnya
+  // Key: teacherId -> Set of partner teacher IDs already paired with
+  const teacherPartnersMap = new Map<string, Set<string>>();
+  activeTeachers.forEach((t) => teacherPartnersMap.set(t.id, new Set<string>()));
+
   // Map classes to rooms (1 room per class or paired)
   const classToRoomMap = new Map<string, ExamRoom>();
   classes.forEach((cls, idx) => {
@@ -389,7 +394,7 @@ export function generateAutomaticSchedule(
           }
         }
 
-        // Find best invigilator 1
+        // Find best Pengawas 1
         const invigilator1 = selectBestInvigilator({
           activeTeachers,
           currentSubject: classSubject,
@@ -416,7 +421,7 @@ export function generateAutomaticSchedule(
           );
         }
 
-        // If 2 invigilators per room are required
+        // If 2 invigilators per room are required (Pengawas 1 & Pengawas 2)
         let invigilator2: Teacher | null = null;
         if (config.invigilatorsPerRoom === 2) {
           invigilator2 = selectBestInvigilator({
@@ -430,6 +435,8 @@ export function generateAutomaticSchedule(
             teacherAssignmentCounts,
             config,
             excludeTeacherId: invigilator1?.id,
+            partnerTeacherId: invigilator1?.id,
+            teacherPartnersMap,
           });
 
           if (invigilator2) {
@@ -439,6 +446,17 @@ export function generateAutomaticSchedule(
             const dayKey = `${invigilator2.id}_day_${d}`;
             const currentDaySessions = dailyTeacherSessions.get(dayKey) || [];
             dailyTeacherSessions.set(dayKey, [...currentDaySessions, session.sessionIndex]);
+
+            // Kriteria Khusus: Catat pasangan agar tidak bertemu lagi di sesi berikutnya
+            if (invigilator1) {
+              const p1Set = teacherPartnersMap.get(invigilator1.id) || new Set<string>();
+              p1Set.add(invigilator2.id);
+              teacherPartnersMap.set(invigilator1.id, p1Set);
+
+              const p2Set = teacherPartnersMap.get(invigilator2.id) || new Set<string>();
+              p2Set.add(invigilator1.id);
+              teacherPartnersMap.set(invigilator2.id, p2Set);
+            }
           }
         }
 
@@ -498,6 +516,8 @@ interface SelectInvigilatorParams {
   teacherAssignmentCounts: Map<string, number>;
   config: ExamTimeConfig;
   excludeTeacherId?: string;
+  partnerTeacherId?: string;
+  teacherPartnersMap?: Map<string, Set<string>>;
 }
 
 /**
@@ -515,6 +535,8 @@ function selectBestInvigilator(params: SelectInvigilatorParams): Teacher | null 
     teacherAssignmentCounts,
     config,
     excludeTeacherId,
+    partnerTeacherId,
+    teacherPartnersMap,
   } = params;
 
   // Filter out hard constraints:
@@ -548,6 +570,16 @@ function selectBestInvigilator(params: SelectInvigilatorParams): Teacher | null 
       return false;
     }
 
+    // 6. Kriteria Khusus Ragam Pasangan Pengawas (Anti-Duplikasi Pengawas):
+    // Jika dalam rentang hari ujian satu guru mendapat beberapa kali jadwal ujian,
+    // maka pengawas pendampingnya harus beda, satu guru hanya boleh bertemu satu guru dengan guru yang lainnya (maksimal 1x)
+    if (config.preventDuplicatePairing !== false && partnerTeacherId && teacherPartnersMap) {
+      const existingPartners = teacherPartnersMap.get(partnerTeacherId);
+      if (existingPartners && existingPartners.has(teacher.id)) {
+        return false;
+      }
+    }
+
     return true;
   });
 
@@ -564,8 +596,13 @@ function selectBestInvigilator(params: SelectInvigilatorParams): Teacher | null 
     });
 
     if (fallbackNoSubjectConflict.length > 0) {
-      // Pick candidate with lowest assignment count
+      // Prioritas 1: Pilih kandidat yang BELUM PERNAH dipasangkan dengan partnerTeacherId
       fallbackNoSubjectConflict.sort((a, b) => {
+        const pairedA = (partnerTeacherId && teacherPartnersMap?.get(partnerTeacherId)?.has(a.id)) ? 1 : 0;
+        const pairedB = (partnerTeacherId && teacherPartnersMap?.get(partnerTeacherId)?.has(b.id)) ? 1 : 0;
+        if (pairedA !== pairedB) {
+          return pairedA - pairedB; // Yang belum berpasangan (0) didahulukan daripada yang sudah (1)
+        }
         const countA = teacherAssignmentCounts.get(a.id) || 0;
         const countB = teacherAssignmentCounts.get(b.id) || 0;
         return countA - countB;
@@ -614,6 +651,14 @@ function selectBestInvigilator(params: SelectInvigilatorParams): Teacher | null 
       score += 50;
     }
 
+    // 3. Penalty jika pernah berpasangan (untuk fallback safety):
+    if (config.preventDuplicatePairing !== false && partnerTeacherId && teacherPartnersMap) {
+      const existingPartners = teacherPartnersMap.get(partnerTeacherId);
+      if (existingPartners && existingPartners.has(teacher.id)) {
+        score += 800;
+      }
+    }
+
     // Add tiny deterministic jitter based on teacher ID to avoid picking the same teacher first on ties
     const charCodeSum = teacher.name.charCodeAt(0) % 7;
     score += charCodeSum;
@@ -642,7 +687,7 @@ export function computeScheduleWorkloadAndAudits(
     slotId: string;
     slotInfo: string;
     severity: 'error' | 'warning' | 'info';
-    type: 'SUBJECT_CONFLICT' | 'CLASS_CONFLICT' | 'CONSECUTIVE_FATIGUE' | 'DOUBLE_BOOKED' | 'UNASSIGNED';
+    type: 'SUBJECT_CONFLICT' | 'CLASS_CONFLICT' | 'CONSECUTIVE_FATIGUE' | 'DOUBLE_BOOKED' | 'UNASSIGNED' | 'DUPLICATE_PAIRING';
     message: string;
   }[];
   overallStats: {
@@ -789,6 +834,50 @@ export function computeScheduleWorkloadAndAudits(
       }
     });
   });
+
+  // 4. Audit Kriteria Khusus Ragam Pasangan Pengawas (Anti-Duplikasi Pengawas)
+  // Satu guru hanya boleh bertemu satu guru dengan guru yang lainnya (tidak boleh dipasangkan berulang)
+  if (config.preventDuplicatePairing !== false) {
+    const pairSlotMap = new Map<string, ExamScheduleSlot[]>();
+
+    slots.forEach((slot) => {
+      if (slot.invigilator1Id && slot.invigilator2Id && slot.invigilator1Id !== slot.invigilator2Id) {
+        const [idA, idB] = slot.invigilator1Id < slot.invigilator2Id
+          ? [slot.invigilator1Id, slot.invigilator2Id]
+          : [slot.invigilator2Id, slot.invigilator1Id];
+        const pairKey = `${idA}___${idB}`;
+        const list = pairSlotMap.get(pairKey) || [];
+        list.push(slot);
+        pairSlotMap.set(pairKey, list);
+      }
+    });
+
+    pairSlotMap.forEach((matchedSlots, pairKey) => {
+      if (matchedSlots.length > 1) {
+        const [idA, idB] = pairKey.split('___');
+        const teacherA = teacherMap.get(idA);
+        const teacherB = teacherMap.get(idB);
+        const nameA = teacherA?.name || idA;
+        const nameB = teacherB?.name || idB;
+
+        const statA = statsMap.get(idA);
+        if (statA) statA.hasDuplicatePairingWarning = true;
+        const statB = statsMap.get(idB);
+        if (statB) statB.hasDuplicatePairingWarning = true;
+
+        for (let i = 1; i < matchedSlots.length; i++) {
+          const redundantSlot = matchedSlots[i];
+          conflicts.push({
+            slotId: redundantSlot.id,
+            slotInfo: `${redundantSlot.dateStr} - Sesi ${redundantSlot.sessionIndex} (${redundantSlot.roomName})`,
+            severity: 'warning',
+            type: 'DUPLICATE_PAIRING',
+            message: `Peringatan Kriteria Khusus Ragam Pengawas: ${nameA} dan ${nameB} dipasangkan kembali (${i + 1} kali). Sesuai aturan, jika guru mengawas beberapa kali, pengawas pasangannya wajib berbeda di setiap sesi.`,
+          });
+        }
+      }
+    });
+  }
 
   // Calculate fairness metrics
   const sessionCounts = Array.from(statsMap.values()).map((s) => s.totalSessions);

@@ -173,8 +173,8 @@ export function generateMasterSchedulePDF(
       'Waktu / Sesi',
       'Ruang Ujian',
       'Mata Pelajaran',
-      'Pengawas Utama',
-      config.invigilatorsPerRoom === 2 ? 'Pengawas Pendamping' : 'Keterangan',
+      config.invigilatorsPerRoom === 2 ? 'Pengawas 1' : 'Pengawas Ruang',
+      config.invigilatorsPerRoom === 2 ? 'Pengawas 2' : 'Keterangan',
     ]],
     body: tableRows,
     theme: 'grid',
@@ -307,7 +307,9 @@ export function generateTeacherSlipsPDF(
       `Sesi ${s.sessionIndex}\n(${s.startTime} - ${s.endTime})`,
       s.roomName,
       s.subjectName,
-      s.invigilator1Id === teacher.id ? 'Pengawas Utama (1)' : 'Pengawas Pendamping (2)',
+      s.invigilator1Id === teacher.id
+        ? (config.invigilatorsPerRoom === 2 ? 'Pengawas 1' : 'Pengawas Ruang')
+        : 'Pengawas 2',
     ]);
 
     autoTable(doc, {
@@ -798,8 +800,8 @@ export async function syncScheduleToGoogleSheets(
       'Ruang',
       'Mata Pelajaran',
       'Jumlah Siswa',
-      'Pengawas Utama (1)',
-      'Pengawas Pendamping (2)',
+      'Pengawas 1',
+      'Pengawas 2',
       'Catatan',
     ],
     ...slots.map((s, idx) => [

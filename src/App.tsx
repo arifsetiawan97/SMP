@@ -39,7 +39,7 @@ export default function App() {
   // Master States
   const [config, setConfig] = useState<ExamTimeConfig>(() => {
     const saved = localStorage.getItem('smp_exam_config');
-    return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
+    return saved ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : DEFAULT_CONFIG;
   });
 
   const [teachers, setTeachers] = useState<Teacher[]>(() => {
