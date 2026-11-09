@@ -385,100 +385,163 @@ export function generateAttendanceAndBAP_PDF(
   });
 
   uniqueSessions.forEach((sess, idx) => {
-    if (idx > 0) doc.addPage();
+    if (idx > 0) doc.addPage('a4', 'portrait');
 
     const sessionSlots = slots.filter(
       (s) => s.dateStr === sess.dateStr && s.sessionIndex === sess.sessionIndex
     );
 
-    // KOP Header with Logos & Kabupaten
+    // Sort slots by room name (Ruang 01, Ruang 02...)
+    sessionSlots.sort((a, b) => a.roomName.localeCompare(b.roomName, undefined, { numeric: true }));
+
+    // Detect if this session requires 2 invigilators per room
+    const hasTwoInvigilators =
+      config.invigilatorsPerRoom === 2 ||
+      sessionSlots.some((s) => Boolean(s.invigilator2Name && s.invigilator2Name !== '-'));
+
+    // KOP Header with Logos & Kabupaten (Compact height ~36-40mm)
     const startTableY = drawOfficialLetterhead(doc, config, 210, {
       documentTitle: 'DAFTAR HADIR PENGAWAS & BERITA ACARA UJIAN',
-      documentSubtitle: `Hari/Tanggal: ${sess.dateStr} | Sesi ${sess.sessionIndex} (${sess.startTime} - ${sess.endTime})`,
+      documentSubtitle: `Hari/Tanggal: ${sess.dateStr} | Sesi ${sess.sessionIndex} (${sess.startTime} - ${sess.endTime} WIB)`,
       compact: true,
     });
 
-    const rows = sessionSlots.map((s, sIdx) => [
-      sIdx + 1,
-      s.roomName,
-      s.classNames.join(', '),
-      s.subjectName,
-      s.invigilator1Name || '-',
-      '', // Tanda Tangan
-    ]);
+    if (hasTwoInvigilators) {
+      // 2 Pengawas per Ruang: Pengawas 1, TTD 1, Pengawas 2, TTD 2 (TANPA KELAS)
+      const rows = sessionSlots.map((s, sIdx) => [
+        sIdx + 1,
+        s.roomName,
+        s.subjectName,
+        s.invigilator1Name || '-',
+        `${sIdx + 1}. ................`,
+        s.invigilator2Name || '-',
+        `${sIdx + 1}. ................`,
+      ]);
 
-    autoTable(doc, {
-      startY: startTableY + 2,
-      head: [['No', 'Ruang', 'Kelas', 'Mata Pelajaran', 'Nama Pengawas', 'Tanda Tangan']],
-      body: rows,
-      theme: 'grid',
-      styles: { fontSize: 8.5, cellPadding: 3, valign: 'middle' },
-      headStyles: { fillColor: [51, 65, 85], textColor: [255, 255, 255], halign: 'center' },
-      columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 25, halign: 'center' },
-        2: { cellWidth: 25, halign: 'center' },
-        3: { cellWidth: 45 },
-        4: { cellWidth: 45 },
-        5: { cellWidth: 30 },
-      },
-    });
+      autoTable(doc, {
+        startY: startTableY + 3,
+        head: [['No', 'Ruang Ujian', 'Mata Pelajaran', 'Nama Pengawas 1', 'Tanda Tangan 1', 'Nama Pengawas 2', 'Tanda Tangan 2']],
+        body: rows,
+        theme: 'grid',
+        margin: { left: 12, right: 12 },
+        styles: {
+          fontSize: 8,
+          cellPadding: 2.2,
+          valign: 'middle',
+          textColor: [15, 23, 42],
+        },
+        headStyles: {
+          fillColor: [30, 41, 59],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center',
+          fontSize: 8,
+        },
+        columnStyles: {
+          0: { cellWidth: 8, halign: 'center' },
+          1: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
+          2: { cellWidth: 40 },
+          3: { cellWidth: 36 },
+          4: { cellWidth: 22, halign: 'left' },
+          5: { cellWidth: 36 },
+          6: { cellWidth: 22, halign: 'left' },
+        },
+      });
+    } else {
+      // 1 Pengawas per Ruang: Nama Pengawas Ruang, Tanda Tangan (TANPA KELAS)
+      const rows = sessionSlots.map((s, sIdx) => [
+        sIdx + 1,
+        s.roomName,
+        s.subjectName,
+        s.invigilator1Name || '-',
+        `${sIdx + 1}. ......................................`,
+      ]);
 
-    autoTable(doc, {
-      startY: 34,
-      head: [['No', 'Ruang', 'Kelas', 'Mata Pelajaran', 'Nama Pengawas', 'Tanda Tangan']],
-      body: rows,
-      theme: 'grid',
-      styles: { fontSize: 8.5, cellPadding: 3, valign: 'middle' },
-      headStyles: { fillColor: [51, 65, 85], textColor: [255, 255, 255], halign: 'center' },
-      columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 25, halign: 'center' },
-        2: { cellWidth: 25, halign: 'center' },
-        3: { cellWidth: 45 },
-        4: { cellWidth: 45 },
-        5: { cellWidth: 30 },
-      },
-    });
+      autoTable(doc, {
+        startY: startTableY + 3,
+        head: [['No', 'Ruang Ujian', 'Mata Pelajaran', 'Nama Pengawas Ruang', 'Tanda Tangan']],
+        body: rows,
+        theme: 'grid',
+        margin: { left: 12, right: 12 },
+        styles: {
+          fontSize: 8.5,
+          cellPadding: 2.8,
+          valign: 'middle',
+          textColor: [15, 23, 42],
+        },
+        headStyles: {
+          fillColor: [30, 41, 59],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center',
+          fontSize: 8.5,
+        },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 30, halign: 'center', fontStyle: 'bold' },
+          2: { cellWidth: 50 },
+          3: { cellWidth: 54 },
+          4: { cellWidth: 42, halign: 'left' },
+        },
+      });
+    }
 
     // @ts-expect-error jspdf-autotable
-    const endY = (doc.lastAutoTable?.finalY || 140) + 10;
+    const finalTableY = doc.lastAutoTable?.finalY || 140;
 
-    // Catatan Berita Acara
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text('CATATAN BERITA ACARA KEJADIAN PENTING:', 15, endY);
-    doc.setDrawColor(200, 200, 200);
-    doc.rect(15, endY + 3, 180, 25);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text('(Catat jumlah siswa hadir/tidak hadir, lembar soal rusak, atau insiden lainnya)', 18, endY + 8);
-    doc.setTextColor(0, 0, 0);
-
-    // Signatures (Lembar Pengesahan BAP: Kepala Sekolah Kiri, Ketua Panitia Kanan)
-    const sigY = endY + 35;
-    if (sigY < 265) {
-      const headmasterIdLabel = config.headmasterIdType || 'NIP';
-      const chairmanIdLabel = config.committeeChairmanIdType || 'NIP';
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-
-      // KIRI: Kepala Sekolah
-      doc.text('Mengetahui,', 30, sigY);
-      doc.text(`Kepala ${config.schoolName},`, 30, sigY + 5);
-      doc.setFont('helvetica', 'bold');
-      doc.text(config.headmasterName, 30, sigY + 24);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`${headmasterIdLabel}. ${config.headmasterNip || '-'}`, 30, sigY + 29);
-
-      // KANAN: Ketua Panitia
-      doc.text('Ketua Panitia Ujian,', 140, sigY + 5);
-      doc.setFont('helvetica', 'bold');
-      doc.text(config.committeeChairmanName, 140, sigY + 24);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`${chairmanIdLabel}. ${config.committeeChairmanNip || '-'}`, 140, sigY + 29);
+    // Check if Catatan Berita Acara & Signatures fit on current page cleanly
+    let boxY = finalTableY + 4;
+    if (boxY + 54 > 282) {
+      doc.addPage('a4', 'portrait');
+      boxY = 22;
     }
+
+    // Catatan Berita Acara Kejadian Penting
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 41, 59);
+    doc.text('CATATAN BERITA ACARA KEJADIAN PENTING / PELAKSANAAN UJIAN:', 12, boxY);
+
+    doc.setDrawColor(203, 213, 225);
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(12, boxY + 2.5, 186, 20, 1.5, 1.5, 'FD');
+
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text(
+      'Catatan: Jumlah siswa hadir/tidak hadir, kondisi lembar soal & LJK, ketertiban ruang, atau kejadian khusus lainnya.',
+      15,
+      boxY + 7
+    );
+
+    // Lembar Pengesahan: KETUA PANITIA di KIRI, PETUGAS / PANITIA PIKET di KANAN
+    const sigY = boxY + 28;
+    const chairmanIdLabel = config.committeeChairmanIdType || 'NIP';
+    const city = config.kabupaten
+      ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '').trim()
+      : 'Sekolah';
+    const dateFormatted = sess.dateStr || '';
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 41, 59);
+
+    // SISI KIRI: Ketua Panitia Ujian
+    doc.text('Mengetahui,', 25, sigY);
+    doc.text('Ketua Panitia Ujian,', 25, sigY + 4.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(config.committeeChairmanName || 'Ketua Panitia Ujian', 25, sigY + 22);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${chairmanIdLabel}. ${config.committeeChairmanNip || '-'}`, 25, sigY + 26.5);
+
+    // SISI KANAN: Petugas / Panitia Piket
+    doc.text(`${city}, ${dateFormatted}`, 135, sigY);
+    doc.text('Petugas / Panitia Piket,', 135, sigY + 4.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text('( .................................................... )', 135, sigY + 22);
+    doc.setFont('helvetica', 'normal');
+    doc.text('NIP. ...............................................', 135, sigY + 26.5);
   });
 
   doc.save(`Daftar_Hadir_Pengawas_dan_BAP_${config.schoolName.replace(/\s+/g, '_')}.pdf`);
