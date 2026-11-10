@@ -1147,27 +1147,15 @@ export const AutoSchedulerSettings: React.FC<AutoSchedulerSettingsProps> = ({
                         />
                       </div>
                       <div>
-                        <label className="flex items-center gap-1.5 text-[10px] text-slate-600 font-medium cursor-pointer mb-1">
-                          <input
-                            type="checkbox"
-                            checked={config.bapUseCustomDate || false}
-                            onChange={(e) => setConfig({ ...config, bapUseCustomDate: e.target.checked })}
-                            className="w-3.5 h-3.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                          />
-                          Gunakan Tanggal Manual Khusus BAP
+                        <label className="text-[10px] text-slate-600 font-semibold flex items-center justify-between mb-0.5">
+                          <span>Tanggal Lembar Pengesahan BAP</span>
+                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                            Sesuai Jadwal Ujian
+                          </span>
                         </label>
-                        {config.bapUseCustomDate ? (
-                          <input
-                            type="date"
-                            value={config.bapDate || ''}
-                            onChange={(e) => setConfig({ ...config, bapDate: e.target.value })}
-                            className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-medium focus:ring-1 focus:ring-blue-500"
-                          />
-                        ) : (
-                          <div className="px-2 py-1 rounded bg-slate-100 text-[10px] text-slate-500 italic border border-slate-200">
-                            Mengikuti tanggal hari/sesi ujian berlangsung otomatis
-                          </div>
-                        )}
+                        <div className="p-2 rounded-lg bg-emerald-50/80 border border-emerald-200 text-[10.5px] text-emerald-900 leading-relaxed">
+                          <strong>Otomatis Menyesuaikan Tanggal Ujian:</strong> Lembar pengesahan BAP & Presensi Pengawas secara otomatis mencantumkan tanggal sesuai hari ujian tiap sesi (contoh: ujian tanggal 6 disahkan tanggal 6, ujian tanggal 7 disahkan tanggal 7, dan seterusnya).
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1251,23 +1239,14 @@ export const AutoSchedulerSettings: React.FC<AutoSchedulerSettingsProps> = ({
 
                       {/* Sisi Kanan: Petugas / Piket */}
                       <div className="pl-2">
-                        <p className="text-slate-600 text-[11px] font-medium">
-                          {config.bapCity || config.approvalCity || 'Sleman'},{' '}
-                          {config.bapUseCustomDate && config.bapDate
-                            ? (() => {
-                                try {
-                                  const d = new Date(config.bapDate.includes('T') ? config.bapDate : `${config.bapDate}T00:00:00`);
-                                  return !isNaN(d.getTime())
-                                    ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-                                    : config.bapDate;
-                                } catch {
-                                  return config.bapDate;
-                                }
-                              })()
-                            : '[Sesuai Tanggal Ujian Tiap Sesi]'}
+                        <p className="text-slate-700 text-[11px] font-semibold">
+                          {config.bapCity || config.approvalCity || 'Sleman'}, [Sesuai Tanggal Ujian Tiap Sesi]
                         </p>
-                        <p className="font-semibold text-slate-800 text-[11px]">Petugas / Panitia Piket</p>
-                        <div className="my-2.5 text-slate-300 italic text-[10px]">[Tanda Tangan]</div>
+                        <p className="text-[10px] text-emerald-700 font-medium">
+                          (Contoh: 6 Juni 2026, 7 Juni 2026, 8 Juni 2026, dst)
+                        </p>
+                        <p className="font-semibold text-slate-800 text-[11px] mt-1">Petugas / Panitia Piket</p>
+                        <div className="my-2 text-slate-300 italic text-[10px]">[Tanda Tangan]</div>
                         <p className="font-bold text-slate-900 underline text-xs">( .................................................... )</p>
                         <p className="text-[10px] text-slate-500 font-mono mt-0.5">NIP. ...............................................</p>
                       </div>

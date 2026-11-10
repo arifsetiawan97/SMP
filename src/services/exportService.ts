@@ -420,6 +420,90 @@ export function generateTeacherSlipsPDF(
 }
 
 /**
+ * Format any session date string into formal Indonesian signature date without day name
+ * Example: "Senin, 06 Jun 2026" -> "6 Juni 2026"
+ *          "Selasa, 07 Jun 2026" -> "7 Juni 2026"
+ *          "Rabu, 08 Jun 2026" -> "8 Juni 2026"
+ */
+export function formatFormalIndonesianDate(
+  inputDateStr?: string,
+  fallbackDate?: Date
+): string {
+  if (!inputDateStr || !inputDateStr.trim()) {
+    if (fallbackDate && !isNaN(fallbackDate.getTime())) {
+      return fallbackDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    return '';
+  }
+
+  const clean = inputDateStr.trim();
+
+  // 1. ISO format: YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+    const [y, m, d] = clean.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    if (!isNaN(dateObj.getTime())) {
+      return dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+  }
+
+  const monthMap: Record<string, string> = {
+    jan: 'Januari', januari: 'Januari',
+    feb: 'Februari', februari: 'Februari',
+    mar: 'Maret', maret: 'Maret',
+    apr: 'April', april: 'April',
+    mei: 'Mei',
+    jun: 'Juni', juni: 'Juni',
+    jul: 'Juli', juli: 'Juli',
+    agu: 'Agustus', ags: 'Agustus', agustus: 'Agustus',
+    sep: 'September', september: 'September',
+    okt: 'Oktober', oktober: 'Oktober',
+    nov: 'November', november: 'November',
+    des: 'Desember', desember: 'Desember',
+  };
+
+  // 2. Pattern with day number, month name, and 4-digit year (e.g. "Senin, 06 Jun 2026", "Sabtu, 06 Juni 2026", "6 Juni 2026")
+  const wordMonthRegex = /(?:[A-Za-z]+,\s*)?(\b\d{1,2}\b)[\s\/\-]+([A-Za-z]+)[\s\/\-]+(\b\d{4}\b)/;
+  const wordMatch = clean.match(wordMonthRegex);
+  if (wordMatch) {
+    const dayNum = parseInt(wordMatch[1], 10);
+    const rawMonth = wordMatch[2].toLowerCase();
+    const year = wordMatch[3];
+    const monthName = monthMap[rawMonth] || (rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1));
+    return `${dayNum} ${monthName} ${year}`;
+  }
+
+  // 3. Pattern with numeric date: DD/MM/YYYY or DD-MM-YYYY
+  const numDateRegex = /(?:[A-Za-z]+,\s*)?(\b\d{1,2}\b)[\s\/\-](\b\d{1,2}\b)[\s\/\-](\b\d{4}\b)/;
+  const numMatch = clean.match(numDateRegex);
+  if (numMatch) {
+    const dayNum = parseInt(numMatch[1], 10);
+    const mNum = parseInt(numMatch[2], 10);
+    const year = numMatch[3];
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+    ];
+    if (mNum >= 1 && mNum <= 12) {
+      return `${dayNum} ${months[mNum - 1]} ${year}`;
+    }
+  }
+
+  // 4. Try JS Date parsing
+  try {
+    const parsed = new Date(clean);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+  } catch {
+    // ignore
+  }
+
+  // Fallback: strip leading day name (e.g., "Senin, ")
+  return clean.replace(/^[A-Za-z]+,\s*/, '');
+}
+
+/**
  * Generate Berita Acara & Daftar Hadir Pengawas (Official Exam Documents)
  */
 /**
@@ -436,7 +520,7 @@ export function buildAttendanceAndBAP_PDFDoc(
   });
 
   // Group slots by date and session to generate BAP per room/session
-  const uniqueSessions: { dateStr: string; sessionIndex: number; startTime: string; endTime: string }[] = [];
+  const uniqueSessions: { dateStr: string; sessionIndex: number; startTime: string; endTime: string; dayIndex: number }[] = [];
   slots.forEach((s) => {
     if (!uniqueSessions.some((u) => u.dateStr === s.dateStr && u.sessionIndex === s.sessionIndex)) {
       uniqueSessions.push({
@@ -444,8 +528,15 @@ export function buildAttendanceAndBAP_PDFDoc(
         sessionIndex: s.sessionIndex,
         startTime: s.startTime,
         endTime: s.endTime,
+        dayIndex: typeof s.dayIndex === 'number' ? s.dayIndex : 0,
       });
     }
+  });
+
+  // Sort sessions chronologically by dayIndex and sessionIndex
+  uniqueSessions.sort((a, b) => {
+    if (a.dayIndex !== b.dayIndex) return a.dayIndex - b.dayIndex;
+    return a.sessionIndex - b.sessionIndex;
   });
 
   uniqueSessions.forEach((sess, idx) => {
@@ -603,15 +694,26 @@ export function buildAttendanceAndBAP_PDFDoc(
       ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '').trim()
       : 'Sekolah';
 
-    // Tanggal BAP: jika bapUseCustomDate aktif gunakan tanggal manual, jika tidak gunakan tanggal sesi berjalan
-    let dateFormatted = sess.dateStr || '';
-    if (config.bapUseCustomDate && config.bapDate && config.bapDate.trim()) {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(config.bapDate.trim())) {
-        const [y, m, d] = config.bapDate.trim().split('-').map(Number);
-        dateFormatted = new Date(y, m - 1, d).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-      } else {
-        dateFormatted = config.bapDate.trim();
+    // Tanggal Lembar Pengesahan BAP:
+    // WAJIB disesuaikan secara dinamis dengan jadwal ujian sesi terkait:
+    // Misalnya ujian di tanggal 6 maka lembar pengesahan di tanggal 6,
+    // jika ujian di tanggal 7 maka tanggal lembar pengesahan 7, dan seterusnya.
+    let dateFormatted = formatFormalIndonesianDate(sess.dateStr);
+
+    // Fallback jika sess.dateStr kosong: hitung dari config.startDate + sess.dayIndex
+    if (!dateFormatted && config.startDate) {
+      try {
+        const parts = config.startDate.split('-').map(Number);
+        const baseDate = new Date(parts[0] || 2026, (parts[1] || 6) - 1, (parts[2] || 8) + (sess.dayIndex || 0));
+        dateFormatted = formatFormalIndonesianDate('', baseDate);
+      } catch {
+        // ignore
       }
+    }
+
+    // Jika pengguna secara spesifik mengaktifkan tanggal manual khusus BAP, gunakan override tsb
+    if (config.bapUseCustomDate && config.bapDate && config.bapDate.trim()) {
+      dateFormatted = formatFormalIndonesianDate(config.bapDate);
     }
 
     doc.setFont('helvetica', 'normal');
