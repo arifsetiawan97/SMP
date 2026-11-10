@@ -125,6 +125,13 @@ export interface ExamTimeConfig {
   committeeChairmanNip: string;
   committeeChairmanIdType?: 'NIP' | 'NIPPPK';
   
+  // Tempat & Tanggal Lembar Pengesahan Manual:
+  approvalCity?: string; // Tempat penetapan Jadwal Master & Excel (misal: "Sleman")
+  approvalDate?: string; // Tanggal penetapan Jadwal Master & Excel (misal: "2026-06-01")
+  bapCity?: string; // Tempat tanda tangan Daftar Hadir & BAP Pengawas
+  bapDate?: string; // Tanggal manual Daftar Hadir & BAP Pengawas
+  bapUseCustomDate?: boolean; // True: tanggal BAP manual, False: otomatis tanggal sesi berjalan
+
   startDate: string; // "YYYY-MM-DD"
   examDaysCount: number; // e.g. 5 days
   activeDays: string[]; // ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"]

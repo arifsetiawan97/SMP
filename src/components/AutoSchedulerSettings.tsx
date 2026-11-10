@@ -1086,39 +1086,191 @@ export const AutoSchedulerSettings: React.FC<AutoSchedulerSettingsProps> = ({
                   </div>
                 </div>
 
-                {/* Pratinjau Visual Lembar Pengesahan */}
-                <div className="mt-3 p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                      Pratinjau Lembar Pengesahan di Dokumen Resmi:
-                    </span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                      Kepala Sekolah (Kiri) • Ketua Panitia (Kanan)
+                {/* Pengaturan Manual Tempat & Tanggal Pengesahan */}
+                <div className="mt-3 p-3.5 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-blue-700" />
+                    <span className="text-xs font-bold text-blue-900">
+                      Tempat & Tanggal Pengesahan Dokumen (Manual Sesuai Kebutuhan)
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-center py-2.5 px-3 bg-slate-50 rounded-lg border border-slate-100 text-xs">
-                    {/* Sisi Kiri: Kepala Sekolah */}
-                    <div className="border-r border-slate-200 pr-2">
-                      <p className="text-slate-500 text-[11px]">Mengetahui,</p>
-                      <p className="font-semibold text-slate-800 text-[11px]">Kepala {config.schoolName}</p>
-                      <div className="my-3 text-slate-300 italic text-[10px]">[Tanda Tangan & Cap Sekolah]</div>
-                      <p className="font-bold text-slate-900 underline text-xs">{config.headmasterName || 'Nama Kepala Sekolah'}</p>
-                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        {config.headmasterIdType || 'NIP'}. {config.headmasterNip || '-'}
-                      </p>
+                  <p className="text-[11px] text-blue-800 leading-relaxed">
+                    Atur kota/tempat dan tanggal pengesahan secara bebas untuk menyesuaikan format administrasi sekolah Anda pada Jadwal Master maupun Berita Acara (BAP).
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                    {/* 1. Pengesahan Jadwal Master */}
+                    <div className="p-2.5 bg-white rounded-lg border border-blue-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-800">1. Jadwal Master & SK</span>
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                          Kepala Sekolah & Ketua
+                        </span>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-500 font-semibold">Tempat / Kota Pengesahan</label>
+                        <input
+                          type="text"
+                          value={config.approvalCity || ''}
+                          onChange={(e) => setConfig({ ...config, approvalCity: e.target.value })}
+                          placeholder="Contoh: Sleman, Yogyakarta, Jakarta"
+                          className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-medium focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-500 font-semibold">Tanggal Pengesahan Jadwal</label>
+                        <input
+                          type="date"
+                          value={config.approvalDate || ''}
+                          onChange={(e) => setConfig({ ...config, approvalDate: e.target.value })}
+                          className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-medium focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
                     </div>
 
-                    {/* Sisi Kanan: Ketua Panitia */}
-                    <div className="pl-2">
-                      <p className="text-slate-500 text-[11px]">
-                        {config.kabupaten ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '') : 'Sekolah'}
-                      </p>
-                      <p className="font-semibold text-slate-800 text-[11px]">Ketua Panitia Ujian</p>
-                      <div className="my-3 text-slate-300 italic text-[10px]">[Tanda Tangan]</div>
-                      <p className="font-bold text-slate-900 underline text-xs">{config.committeeChairmanName || 'Nama Ketua Panitia'}</p>
-                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                        {config.committeeChairmanIdType || 'NIP'}. {config.committeeChairmanNip || '-'}
-                      </p>
+                    {/* 2. Berita Acara & Daftar Hadir Pengawas (BAP) */}
+                    <div className="p-2.5 bg-white rounded-lg border border-blue-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-800">2. Berita Acara & Hadir (BAP)</span>
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                          Ketua (Kiri) & Piket (Kanan)
+                        </span>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-500 font-semibold">Tempat Tanda Tangan BAP</label>
+                        <input
+                          type="text"
+                          value={config.bapCity || ''}
+                          onChange={(e) => setConfig({ ...config, bapCity: e.target.value })}
+                          placeholder="Contoh: Sleman"
+                          className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-medium focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="flex items-center gap-1.5 text-[10px] text-slate-600 font-medium cursor-pointer mb-1">
+                          <input
+                            type="checkbox"
+                            checked={config.bapUseCustomDate || false}
+                            onChange={(e) => setConfig({ ...config, bapUseCustomDate: e.target.checked })}
+                            className="w-3.5 h-3.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                          />
+                          Gunakan Tanggal Manual Khusus BAP
+                        </label>
+                        {config.bapUseCustomDate ? (
+                          <input
+                            type="date"
+                            value={config.bapDate || ''}
+                            onChange={(e) => setConfig({ ...config, bapDate: e.target.value })}
+                            className="w-full mt-0.5 px-2.5 py-1 rounded-lg border border-slate-300 bg-white text-xs font-medium focus:ring-1 focus:ring-blue-500"
+                          />
+                        ) : (
+                          <div className="px-2 py-1 rounded bg-slate-100 text-[10px] text-slate-500 italic border border-slate-200">
+                            Mengikuti tanggal hari/sesi ujian berlangsung otomatis
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pratinjau Visual Lembar Pengesahan */}
+                <div className="mt-3 p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                        Pratinjau Pengesahan Jadwal Master:
+                      </span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                        Kepala Sekolah (Kiri) • Ketua Panitia (Kanan)
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-center py-2.5 px-3 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+                      {/* Sisi Kiri: Kepala Sekolah */}
+                      <div className="border-r border-slate-200 pr-2">
+                        <p className="text-slate-500 text-[11px]">Mengetahui,</p>
+                        <p className="font-semibold text-slate-800 text-[11px]">Kepala {config.schoolName}</p>
+                        <div className="my-3 text-slate-300 italic text-[10px]">[Tanda Tangan & Cap Sekolah]</div>
+                        <p className="font-bold text-slate-900 underline text-xs">{config.headmasterName || 'Nama Kepala Sekolah'}</p>
+                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                          {config.headmasterIdType || 'NIP'}. {config.headmasterNip || '-'}
+                        </p>
+                      </div>
+
+                      {/* Sisi Kanan: Ketua Panitia */}
+                      <div className="pl-2">
+                        <p className="text-slate-600 text-[11px] font-medium">
+                          Ditetapkan di: {config.approvalCity || (config.kabupaten ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '') : 'Sleman')}
+                        </p>
+                        <p className="text-slate-500 text-[10px] mb-1">
+                          Pada tanggal:{' '}
+                          {config.approvalDate
+                            ? (() => {
+                                try {
+                                  const d = new Date(config.approvalDate.includes('T') ? config.approvalDate : `${config.approvalDate}T00:00:00`);
+                                  return !isNaN(d.getTime())
+                                    ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                                    : config.approvalDate;
+                                } catch {
+                                  return config.approvalDate;
+                                }
+                              })()
+                            : (config.startDate
+                                ? new Date(config.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                                : '-')}
+                        </p>
+                        <p className="font-semibold text-slate-800 text-[11px]">Ketua Panitia Ujian</p>
+                        <div className="my-2.5 text-slate-300 italic text-[10px]">[Tanda Tangan]</div>
+                        <p className="font-bold text-slate-900 underline text-xs">{config.committeeChairmanName || 'Nama Ketua Panitia'}</p>
+                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                          {config.committeeChairmanIdType || 'NIP'}. {config.committeeChairmanNip || '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                        Pratinjau Pengesahan Berita Acara & Daftar Hadir (BAP):
+                      </span>
+                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                        Ketua Panitia (Kiri) • Petugas / Panitia Piket (Kanan)
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-center py-2.5 px-3 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+                      {/* Sisi Kiri: Ketua Panitia */}
+                      <div className="border-r border-slate-200 pr-2">
+                        <p className="text-slate-500 text-[11px]">Mengetahui,</p>
+                        <p className="font-semibold text-slate-800 text-[11px]">Ketua Panitia {config.examType || 'SAS'}</p>
+                        <div className="my-2.5 text-slate-300 italic text-[10px]">[Tanda Tangan]</div>
+                        <p className="font-bold text-slate-900 underline text-xs">{config.committeeChairmanName || 'Nama Ketua Panitia'}</p>
+                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                          {config.committeeChairmanIdType || 'NIP'}. {config.committeeChairmanNip || '-'}
+                        </p>
+                      </div>
+
+                      {/* Sisi Kanan: Petugas / Piket */}
+                      <div className="pl-2">
+                        <p className="text-slate-600 text-[11px] font-medium">
+                          {config.bapCity || config.approvalCity || 'Sleman'},{' '}
+                          {config.bapUseCustomDate && config.bapDate
+                            ? (() => {
+                                try {
+                                  const d = new Date(config.bapDate.includes('T') ? config.bapDate : `${config.bapDate}T00:00:00`);
+                                  return !isNaN(d.getTime())
+                                    ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                                    : config.bapDate;
+                                } catch {
+                                  return config.bapDate;
+                                }
+                              })()
+                            : '[Sesuai Tanggal Ujian Tiap Sesi]'}
+                        </p>
+                        <p className="font-semibold text-slate-800 text-[11px]">Petugas / Panitia Piket</p>
+                        <div className="my-2.5 text-slate-300 italic text-[10px]">[Tanda Tangan]</div>
+                        <p className="font-bold text-slate-900 underline text-xs">( .................................................... )</p>
+                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">NIP. ...............................................</p>
+                      </div>
                     </div>
                   </div>
                 </div>

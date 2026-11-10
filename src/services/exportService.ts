@@ -137,11 +137,22 @@ export function drawOfficialLetterhead(
 /**
  * Generate Master PDF Schedule
  */
-export function generateMasterSchedulePDF(
+/**
+ * Helper to get Blob URL from jsPDF document for in-app preview/review
+ */
+export function getPdfBlobUrl(doc: jsPDF): string {
+  const blob = doc.output('blob');
+  return URL.createObjectURL(blob);
+}
+
+/**
+ * Build Master Schedule PDF Document (Landscape A4)
+ */
+export function buildMasterSchedulePDFDoc(
   config: ExamTimeConfig,
   slots: ExamScheduleSlot[],
   teachers: Teacher[]
-): void {
+): jsPDF {
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
@@ -216,10 +227,26 @@ export function generateMasterSchedulePDF(
   
   const chairmanIdLabel = config.committeeChairmanIdType || 'NIP';
   const headmasterIdLabel = config.headmasterIdType || 'NIP';
-  const city = config.kabupaten ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '') : 'Sekolah';
-  const examDateStr = config.startDate
-    ? new Date(config.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-    : '';
+
+  // Tempat penetapan manual atau otomatis dari kabupaten
+  const city = (config.approvalCity && config.approvalCity.trim())
+    ? config.approvalCity.trim()
+    : config.kabupaten
+    ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '').trim()
+    : 'Sekolah';
+
+  // Tanggal penetapan manual atau otomatis dari startDate
+  let examDateStr = '';
+  if (config.approvalDate && config.approvalDate.trim()) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(config.approvalDate.trim())) {
+      const [y, m, d] = config.approvalDate.trim().split('-').map(Number);
+      examDateStr = new Date(y, m - 1, d).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    } else {
+      examDateStr = config.approvalDate.trim();
+    }
+  } else if (config.startDate) {
+    examDateStr = new Date(config.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
 
   // KIRI: Kepala Sekolah (Penandatangan & Pengesahan Utama)
   doc.text(`Mengetahui,`, 30, signatureY);
@@ -246,17 +273,26 @@ export function generateMasterSchedulePDF(
     doc.text(`${chairmanIdLabel}. ${config.committeeChairmanNip || '-'}`, 200, signatureY + 30);
   }
 
+  return doc;
+}
+
+export function generateMasterSchedulePDF(
+  config: ExamTimeConfig,
+  slots: ExamScheduleSlot[],
+  teachers: Teacher[]
+): void {
+  const doc = buildMasterSchedulePDFDoc(config, slots, teachers);
   doc.save(`Jadwal_Master_${config.schoolName.replace(/\s+/g, '_')}_${config.semester}.pdf`);
 }
 
 /**
- * Generate PDF Slips per Teacher (Surat Tugas / Slip Pengawas Individu)
+ * Build PDF Slips per Teacher Document
  */
-export function generateTeacherSlipsPDF(
+export function buildTeacherSlipsPDFDoc(
   config: ExamTimeConfig,
   teachers: Teacher[],
   slots: ExamScheduleSlot[]
-): void {
+): jsPDF {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -264,6 +300,24 @@ export function generateTeacherSlipsPDF(
   });
 
   const activeTeachers = teachers.filter((t) => t.isAvailable);
+
+  const teacherSlipCity = (config.approvalCity && config.approvalCity.trim())
+    ? config.approvalCity.trim()
+    : config.kabupaten
+    ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '').trim()
+    : 'Sekolah';
+
+  let examDateStr = '';
+  if (config.approvalDate && config.approvalDate.trim()) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(config.approvalDate.trim())) {
+      const [y, m, d] = config.approvalDate.trim().split('-').map(Number);
+      examDateStr = new Date(y, m - 1, d).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    } else {
+      examDateStr = config.approvalDate.trim();
+    }
+  } else if (config.startDate) {
+    examDateStr = new Date(config.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
 
   activeTeachers.forEach((teacher, tIdx) => {
     if (tIdx > 0) doc.addPage();
@@ -344,6 +398,7 @@ export function generateTeacherSlipsPDF(
     if (sigY < 265) {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
+      doc.text(`${teacherSlipCity}, ${examDateStr || '........................'}`, 130, sigY - 5);
       doc.text(`Kepala ${config.schoolName},`, 130, sigY);
       doc.setFont('helvetica', 'bold');
       doc.text(config.headmasterName, 130, sigY + 20);
@@ -352,16 +407,28 @@ export function generateTeacherSlipsPDF(
     }
   });
 
+  return doc;
+}
+
+export function generateTeacherSlipsPDF(
+  config: ExamTimeConfig,
+  teachers: Teacher[],
+  slots: ExamScheduleSlot[]
+): void {
+  const doc = buildTeacherSlipsPDFDoc(config, teachers, slots);
   doc.save(`Slip_Jadwal_Pengawas_Semua_Guru_${config.schoolName.replace(/\s+/g, '_')}.pdf`);
 }
 
 /**
  * Generate Berita Acara & Daftar Hadir Pengawas (Official Exam Documents)
  */
-export function generateAttendanceAndBAP_PDF(
+/**
+ * Build Berita Acara & Daftar Hadir Pengawas Document
+ */
+export function buildAttendanceAndBAP_PDFDoc(
   config: ExamTimeConfig,
   slots: ExamScheduleSlot[]
-): void {
+): jsPDF {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -526,10 +593,26 @@ export function generateAttendanceAndBAP_PDF(
     // 4. Lembar Pengesahan: KETUA PANITIA di KIRI, PETUGAS / PANITIA PIKET di KANAN
     const sigY = boxTop + boxHeight + 9;
     const chairmanIdLabel = config.committeeChairmanIdType || 'NIP';
-    const city = config.kabupaten
+
+    // Tempat pengesahan BAP (manual atau fallback ke approvalCity / kabupaten)
+    const bapCity = (config.bapCity && config.bapCity.trim())
+      ? config.bapCity.trim()
+      : (config.approvalCity && config.approvalCity.trim())
+      ? config.approvalCity.trim()
+      : config.kabupaten
       ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '').trim()
       : 'Sekolah';
-    const dateFormatted = sess.dateStr || '';
+
+    // Tanggal BAP: jika bapUseCustomDate aktif gunakan tanggal manual, jika tidak gunakan tanggal sesi berjalan
+    let dateFormatted = sess.dateStr || '';
+    if (config.bapUseCustomDate && config.bapDate && config.bapDate.trim()) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(config.bapDate.trim())) {
+        const [y, m, d] = config.bapDate.trim().split('-').map(Number);
+        dateFormatted = new Date(y, m - 1, d).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      } else {
+        dateFormatted = config.bapDate.trim();
+      }
+    }
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
@@ -544,7 +627,7 @@ export function generateAttendanceAndBAP_PDF(
     doc.text(`${chairmanIdLabel}. ${config.committeeChairmanNip || '-'}`, 25, sigY + 26.5);
 
     // SISI KANAN: Petugas / Panitia Piket
-    doc.text(`${city}, ${dateFormatted}`, 135, sigY);
+    doc.text(`${bapCity}, ${dateFormatted}`, 135, sigY);
     doc.text('Petugas / Panitia Piket,', 135, sigY + 4.5);
     doc.setFont('helvetica', 'bold');
     doc.text('( .................................................... )', 135, sigY + 22);
@@ -552,6 +635,14 @@ export function generateAttendanceAndBAP_PDF(
     doc.text('NIP. ...............................................', 135, sigY + 26.5);
   });
 
+  return doc;
+}
+
+export function generateAttendanceAndBAP_PDF(
+  config: ExamTimeConfig,
+  slots: ExamScheduleSlot[]
+): void {
+  const doc = buildAttendanceAndBAP_PDFDoc(config, slots);
   doc.save(`Daftar_Hadir_Pengawas_dan_BAP_${config.schoolName.replace(/\s+/g, '_')}.pdf`);
 }
 
@@ -682,10 +773,23 @@ export function generateComprehensiveExcel(
   // Sheet 5: LEMBAR PENGESAHAN RESMI (Kepala Sekolah Kiri, Ketua Panitia Kanan)
   const chairmanIdLabel = config.committeeChairmanIdType || 'NIP';
   const headmasterIdLabel = config.headmasterIdType || 'NIP';
-  const city = config.kabupaten ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '') : 'Sekolah';
-  const examDateStr = config.startDate
-    ? new Date(config.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-    : '';
+  const city = (config.approvalCity && config.approvalCity.trim())
+    ? config.approvalCity.trim()
+    : (config.kabupaten ? config.kabupaten.replace(/^(PEMERINTAH\s+|KABUPATEN\s+|KOTA\s+)/i, '') : 'Sekolah');
+  const examDateStr = (config.approvalDate && config.approvalDate.trim())
+    ? (() => {
+        try {
+          const d = new Date(config.approvalDate.includes('T') ? config.approvalDate : `${config.approvalDate}T00:00:00`);
+          return !isNaN(d.getTime())
+            ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+            : config.approvalDate;
+        } catch {
+          return config.approvalDate;
+        }
+      })()
+    : (config.startDate
+        ? new Date(config.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+        : '');
 
   const pengesahanRows = [
     { A: 'LEMBAR PENGESAHAN JADWAL UJIAN DAN PENGAWAS RUANG' },
@@ -885,12 +989,12 @@ export async function syncScheduleToGoogleSheets(
  * Generate Student Exam Cards (Kartu Peserta Ujian Siswa) in PDF
  * 2 Cards per page (A4 portrait)
  */
-export function generateExamCardsPDF(
+export function buildExamCardsPDFDoc(
   config: ExamTimeConfig,
   students: Student[],
   slots: ExamScheduleSlot[],
   filterClassId?: string
-): void {
+): jsPDF {
   const targetStudents = filterClassId && filterClassId !== 'all'
     ? students.filter((s) => s.classId === filterClassId)
     : students;
@@ -1115,6 +1219,16 @@ export function generateExamCardsPDF(
     }
   });
 
+  return doc;
+}
+
+export function generateExamCardsPDF(
+  config: ExamTimeConfig,
+  students: Student[],
+  slots: ExamScheduleSlot[],
+  filterClassId?: string
+): void {
+  const doc = buildExamCardsPDFDoc(config, students, slots, filterClassId);
   doc.save(`Kartu_Ujian_Siswa_${config.schoolName.replace(/\s+/g, '_')}_${filterClassId || 'Semua_Kelas'}.pdf`);
 }
 

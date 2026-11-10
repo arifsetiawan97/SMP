@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { jsPDF } from 'jspdf';
 import {
   FileText,
   FileSpreadsheet,
@@ -10,6 +11,8 @@ import {
   Cloud,
   FileCheck,
   Users,
+  Eye,
+  GraduationCap,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ExamTimeConfig, ExamScheduleSlot, Teacher, ClassRoom, ExamRoom, TeacherWorkloadStats, Subject, Student } from '../types';
@@ -20,8 +23,12 @@ import {
   generateComprehensiveExcel,
   syncScheduleToGoogleSheets,
   generateExamCardsPDF,
+  buildMasterSchedulePDFDoc,
+  buildTeacherSlipsPDFDoc,
+  buildAttendanceAndBAP_PDFDoc,
+  buildExamCardsPDFDoc,
 } from '../services/exportService';
-import { GraduationCap } from 'lucide-react';
+import { DocumentReviewModal } from './DocumentReviewModal';
 
 interface ExportSyncModalProps {
   config: ExamTimeConfig;
@@ -53,6 +60,51 @@ export const ExportSyncModal: React.FC<ExportSyncModalProps> = ({
   const [sheetsResult, setSheetsResult] = useState<{ id: string; url: string } | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
 
+  // Review Modal State
+  const [reviewDoc, setReviewDoc] = useState<{
+    isOpen: boolean;
+    title: string;
+    subtitle: string;
+    doc: jsPDF | null;
+    fileName: string;
+  }>({
+    isOpen: false,
+    title: '',
+    subtitle: '',
+    doc: null,
+    fileName: '',
+  });
+
+  const handlePreviewMasterPDF = () => {
+    try {
+      const doc = buildMasterSchedulePDFDoc(config, slots, teachers);
+      setReviewDoc({
+        isOpen: true,
+        title: 'Pratinjau Jadwal Master & Pembagian Pengawas',
+        subtitle: `Format Resmi Landscape A4 - ${config.schoolName}`,
+        doc,
+        fileName: `Jadwal_Master_Ujian_${config.schoolName.replace(/\s+/g, '_')}.pdf`,
+      });
+    } catch (err: any) {
+      alert('Gagal menyiapkan pratinjau PDF: ' + err.message);
+    }
+  };
+
+  const handlePreviewTeacherSlipsPDF = () => {
+    try {
+      const doc = buildTeacherSlipsPDFDoc(config, teachers, slots);
+      setReviewDoc({
+        isOpen: true,
+        title: 'Pratinjau Surat Tugas & Slip Jadwal Guru',
+        subtitle: `Slip Individu Tiap Pengawas - ${config.schoolName}`,
+        doc,
+        fileName: `Slip_Jadwal_Pengawas_Semua_Guru_${config.schoolName.replace(/\s+/g, '_')}.pdf`,
+      });
+    } catch (err: any) {
+      alert('Gagal menyiapkan pratinjau PDF: ' + err.message);
+    }
+  };
+
   const handleExportCardsPDF = () => {
     if (students.length === 0) {
       alert('Data siswa belum tersedia.');
@@ -67,6 +119,25 @@ export const ExportSyncModal: React.FC<ExportSyncModalProps> = ({
       alert('Gagal mengunduh kartu ujian: ' + err.message);
     } finally {
       setIsExportingCards(false);
+    }
+  };
+
+  const handlePreviewExamCardsPDF = () => {
+    if (students.length === 0) {
+      alert('Data siswa belum tersedia.');
+      return;
+    }
+    try {
+      const doc = buildExamCardsPDFDoc(config, students, slots);
+      setReviewDoc({
+        isOpen: true,
+        title: 'Pratinjau Kartu Peserta Ujian Siswa',
+        subtitle: `Format 2 Kartu per Lembar A4 Portrait (${students.length} Siswa Terdaftar)`,
+        doc,
+        fileName: `Kartu_Ujian_Siswa_${config.schoolName.replace(/\s+/g, '_')}.pdf`,
+      });
+    } catch (err: any) {
+      alert('Gagal menyiapkan pratinjau PDF: ' + err.message);
     }
   };
 
@@ -106,6 +177,21 @@ export const ExportSyncModal: React.FC<ExportSyncModalProps> = ({
       alert('Gagal mengunduh PDF Berita Acara & Daftar Hadir');
     } finally {
       setIsExportingPDF(false);
+    }
+  };
+
+  const handlePreviewBAP_PDF = () => {
+    try {
+      const doc = buildAttendanceAndBAP_PDFDoc(config, slots);
+      setReviewDoc({
+        isOpen: true,
+        title: 'Pratinjau Berita Acara & Daftar Hadir Pengawas (BAP)',
+        subtitle: `Daftar Hadir Pengawas Ruang 1 & 2 serta Catatan Kejadian Khusus`,
+        doc,
+        fileName: `Daftar_Hadir_Pengawas_dan_BAP_${config.schoolName.replace(/\s+/g, '_')}.pdf`,
+      });
+    } catch (err: any) {
+      alert('Gagal menyiapkan pratinjau PDF: ' + err.message);
     }
   };
 
@@ -207,15 +293,29 @@ export const ExportSyncModal: React.FC<ExportSyncModalProps> = ({
             </p>
           </div>
 
-          <button
-            id="download-master-pdf-btn"
-            onClick={handleExportMasterPDF}
-            disabled={isExportingPDF || slots.length === 0}
-            className="mt-5 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-            <span>Unduh Master PDF</span>
-          </button>
+          <div className="mt-5 flex items-center gap-2">
+            <button
+              type="button"
+              id="preview-master-pdf-btn"
+              onClick={handlePreviewMasterPDF}
+              disabled={slots.length === 0}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-rose-50 hover:bg-rose-100 disabled:opacity-40 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 transition-colors cursor-pointer"
+            >
+              <Eye className="w-4 h-4 text-rose-600" />
+              <span>Review Cetak</span>
+            </button>
+            <button
+              type="button"
+              id="download-master-pdf-btn"
+              onClick={handleExportMasterPDF}
+              disabled={isExportingPDF || slots.length === 0}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              title="Unduh PDF Langsung"
+            >
+              <Download className="w-4 h-4" />
+              <span>Unduh</span>
+            </button>
+          </div>
         </div>
 
         {/* Card 2: PDF Slip Guru Pengawas */}
@@ -232,15 +332,29 @@ export const ExportSyncModal: React.FC<ExportSyncModalProps> = ({
             </p>
           </div>
 
-          <button
-            id="download-teacher-slips-pdf-btn"
-            onClick={handleExportTeacherSlipsPDF}
-            disabled={isExportingPDF || slots.length === 0}
-            className="mt-5 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-            <span>Unduh Slip Semua Guru</span>
-          </button>
+          <div className="mt-5 flex items-center gap-2">
+            <button
+              type="button"
+              id="preview-teacher-slips-pdf-btn"
+              onClick={handlePreviewTeacherSlipsPDF}
+              disabled={slots.length === 0}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-40 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition-colors cursor-pointer"
+            >
+              <Eye className="w-4 h-4 text-indigo-600" />
+              <span>Review Slip</span>
+            </button>
+            <button
+              type="button"
+              id="download-teacher-slips-pdf-btn"
+              onClick={handleExportTeacherSlipsPDF}
+              disabled={isExportingPDF || slots.length === 0}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              title="Unduh PDF Langsung"
+            >
+              <Download className="w-4 h-4" />
+              <span>Unduh</span>
+            </button>
+          </div>
         </div>
 
         {/* Card 3: PDF BAP & Daftar Hadir */}
@@ -257,15 +371,29 @@ export const ExportSyncModal: React.FC<ExportSyncModalProps> = ({
             </p>
           </div>
 
-          <button
-            id="download-bap-pdf-btn"
-            onClick={handleExportBAP_PDF}
-            disabled={isExportingPDF || slots.length === 0}
-            className="mt-5 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-900 disabled:opacity-40 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-            <span>Unduh Berita Acara & Presensi</span>
-          </button>
+          <div className="mt-5 flex items-center gap-2">
+            <button
+              type="button"
+              id="preview-bap-pdf-btn"
+              onClick={handlePreviewBAP_PDF}
+              disabled={slots.length === 0}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-800 text-xs font-bold rounded-xl border border-slate-300 transition-colors cursor-pointer"
+            >
+              <Eye className="w-4 h-4 text-slate-700" />
+              <span>Review BAP</span>
+            </button>
+            <button
+              type="button"
+              id="download-bap-pdf-btn"
+              onClick={handleExportBAP_PDF}
+              disabled={isExportingPDF || slots.length === 0}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-slate-800 hover:bg-slate-900 disabled:opacity-40 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              title="Unduh PDF Langsung"
+            >
+              <Download className="w-4 h-4" />
+              <span>Unduh</span>
+            </button>
+          </div>
         </div>
 
         {/* Card 4: Comprehensive Excel Export */}
@@ -309,19 +437,30 @@ export const ExportSyncModal: React.FC<ExportSyncModalProps> = ({
 
           <div className="mt-5 flex items-center gap-2">
             <button
+              type="button"
+              id="preview-exam-cards-pdf-btn"
+              onClick={handlePreviewExamCardsPDF}
+              disabled={students.length === 0}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-2.5 bg-violet-50 hover:bg-violet-100 disabled:opacity-40 text-violet-700 text-xs font-bold rounded-xl border border-violet-200 transition-colors cursor-pointer"
+            >
+              <Eye className="w-4 h-4 text-violet-600" />
+              <span>Review</span>
+            </button>
+            <button
               id="download-exam-cards-pdf-btn"
               onClick={handleExportCardsPDF}
               disabled={isExportingCards || students.length === 0}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              title="Unduh PDF Langsung"
             >
               <Download className="w-4 h-4" />
-              <span>Unduh Kartu PDF</span>
+              <span>Unduh</span>
             </button>
             {onNavigateToCards && (
               <button
                 type="button"
                 onClick={onNavigateToCards}
-                className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                className="px-2.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
                 title="Buka Menu Kartu Ujian Lengkap"
               >
                 Lihat
@@ -330,7 +469,7 @@ export const ExportSyncModal: React.FC<ExportSyncModalProps> = ({
           </div>
         </div>
 
-        {/* Card 5: Google Sheets Direct Integration */}
+        {/* Card 6: Google Sheets Direct Integration */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between hover:border-teal-300 transition-all md:col-span-2">
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -397,6 +536,17 @@ export const ExportSyncModal: React.FC<ExportSyncModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Interactive Review Modal */}
+      <DocumentReviewModal
+        isOpen={reviewDoc.isOpen}
+        onClose={() => setReviewDoc((prev) => ({ ...prev, isOpen: false }))}
+        title={reviewDoc.title}
+        subtitle={reviewDoc.subtitle}
+        doc={reviewDoc.doc}
+        fileName={reviewDoc.fileName}
+        onDownloaded={() => confetti({ particleCount: 50, spread: 60 })}
+      />
     </div>
   );
 };

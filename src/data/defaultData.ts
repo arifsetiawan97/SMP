@@ -19,6 +19,12 @@ export const DEFAULT_CONFIG: ExamTimeConfig = {
   committeeChairmanNip: '19750820 200012 2 002',
   committeeChairmanIdType: 'NIP',
   
+  approvalCity: 'Sleman',
+  approvalDate: '2026-06-01',
+  bapCity: 'Sleman',
+  bapDate: '',
+  bapUseCustomDate: false,
+  
   startDate: '2026-06-08',
   examDaysCount: 5,
   activeDays: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],

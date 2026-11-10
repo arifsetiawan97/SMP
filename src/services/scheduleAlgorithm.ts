@@ -705,7 +705,7 @@ export function computeScheduleWorkloadAndAudits(
     slotId: string;
     slotInfo: string;
     severity: 'error' | 'warning' | 'info';
-    type: 'SUBJECT_CONFLICT' | 'CLASS_CONFLICT' | 'CONSECUTIVE_FATIGUE' | 'DOUBLE_BOOKED' | 'UNASSIGNED';
+    type: 'SUBJECT_CONFLICT' | 'CLASS_CONFLICT' | 'CONSECUTIVE_FATIGUE' | 'DOUBLE_BOOKED' | 'UNASSIGNED' | 'DUPLICATE_PAIRING';
     message: string;
   }[] = [];
 

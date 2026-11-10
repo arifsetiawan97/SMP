@@ -19,10 +19,15 @@ import {
   BookOpen,
   Check,
   X,
-  SlidersHorizontal,
   RotateCcw,
+  SlidersHorizontal,
+  Eye,
+  Printer,
 } from 'lucide-react';
+import type { jsPDF } from 'jspdf';
 import { ExamScheduleSlot, Teacher, Subject, ClassRoom, ExamRoom, ExamTimeConfig } from '../types';
+import { buildMasterSchedulePDFDoc } from '../services/exportService';
+import { DocumentReviewModal } from './DocumentReviewModal';
 
 interface ScheduleMasterTableProps {
   slots: ExamScheduleSlot[];
@@ -61,6 +66,8 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
   const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
   const [slotToDelete, setSlotToDelete] = useState<ExamScheduleSlot | null>(null);
   const [bulkDeleteTarget, setBulkDeleteTarget] = useState<{ mode: 'selected' | 'all'; count: number } | null>(null);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [reviewPdfDoc, setReviewPdfDoc] = useState<jsPDF | null>(null);
 
   // Dropdown open states
   const [isDayDropdownOpen, setIsDayDropdownOpen] = useState(false);
@@ -311,6 +318,26 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-600" />
               <span>Hapus Semua Jadwal</span>
+            </button>
+
+            <button
+              id="btn-preview-master-schedule"
+              type="button"
+              onClick={() => {
+                try {
+                  const doc = buildMasterSchedulePDFDoc(config, slots, teachers);
+                  setReviewPdfDoc(doc);
+                  setIsReviewOpen(true);
+                } catch (err: any) {
+                  alert('Gagal membuat pratinjau dokumen: ' + err.message);
+                }
+              }}
+              disabled={slots.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs disabled:opacity-40"
+              title="Pratinjau sebelum cetak atau unduh Jadwal Master"
+            >
+              <Eye className="w-3.5 h-3.5 text-indigo-200" />
+              <span>Review & Cetak Jadwal</span>
             </button>
 
             <button
@@ -1352,6 +1379,16 @@ export const ScheduleMasterTable: React.FC<ScheduleMasterTableProps> = ({
           </div>
         </div>
       )}
+
+      {/* Interactive Review Modal */}
+      <DocumentReviewModal
+        isOpen={isReviewOpen}
+        onClose={() => setIsReviewOpen(false)}
+        title="Pratinjau Jadwal Master & Pembagian Pengawas"
+        subtitle={`Format Resmi Landscape A4 - ${config.schoolName}`}
+        doc={reviewPdfDoc}
+        fileName={`Jadwal_Master_Ujian_${config.schoolName.replace(/\s+/g, '_')}.pdf`}
+      />
     </div>
   );
 };
